@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recognition Dashboard · Alconost</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --bg:#F7F6F3;--sidebar:#1C1C1E;--card:#FFFFFF;
+  --text:#1C1C1E;--text2:#6B6B6B;--text3:#ADADAD;
+  --border:#E8E6E0;--border2:#D4D0C8;
+  --green:#2DB87A;--blue:#3B7FE8;--amber:#F5A623;--red:#E8503B;--purple:#7C5CBF;
+  --green-bg:#EBF9F2;--blue-bg:#EBF2FD;--amber-bg:#FDF5E6;--red-bg:#FDECEA;
+  --nav-w:220px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text)}
+body{display:flex;overflow:hidden}
+
+/* ── SIDEBAR ── */
+.sidebar{width:var(--nav-w);background:var(--sidebar);display:flex;flex-direction:column;height:100vh;flex-shrink:0;position:fixed;left:0;top:0;z-index:50}
+.sb-logo{padding:1.5rem 1.25rem 1rem;border-bottom:1px solid rgba(255,255,255,.08)}
+.sb-logo-name{font-size:13px;font-weight:600;color:#fff;letter-spacing:.01em}
+.sb-logo-sub{font-size:11px;color:rgba(255,255,255,.35);margin-top:2px}
+.sb-live{display:flex;align-items:center;gap:6px;padding:.75rem 1.25rem;border-bottom:1px solid rgba(255,255,255,.08)}
+.sb-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 2s ease infinite;flex-shrink:0}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.sb-live-txt{font-size:11px;color:rgba(255,255,255,.4)}
+.sb-live-time{font-size:11px;color:rgba(255,255,255,.25);margin-left:auto}
+.sb-nav{padding:.75rem .75rem;flex:1;overflow-y:auto}
+.sb-section-label{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.25);padding:.5rem .5rem .25rem;margin-top:.5rem}
+.nav-item{display:flex;align-items:center;gap:.6rem;padding:.55rem .75rem;border-radius:8px;cursor:pointer;transition:background .15s;font-size:13px;font-weight:500;color:rgba(255,255,255,.55);margin-bottom:2px;text-decoration:none}
+.nav-item:hover{background:rgba(255,255,255,.07);color:rgba(255,255,255,.85)}
+.nav-item.active{background:rgba(255,255,255,.12);color:#fff}
+.nav-item .ico{font-size:14px;width:18px;text-align:center;flex-shrink:0}
+.sb-footer{padding:1rem 1.25rem;border-top:1px solid rgba(255,255,255,.08)}
+.fact-box{background:rgba(255,255,255,.05);border-radius:8px;padding:.75rem}
+.fact-label{font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:.4rem}
+.fact-text{font-size:12px;color:rgba(255,255,255,.6);line-height:1.5}
+.fact-accent{color:var(--green);font-weight:600}
+.refresh-btn{width:100%;margin-top:.75rem;padding:.5rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:7px;color:rgba(255,255,255,.45);font-size:11px;font-family:'Inter',sans-serif;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:5px}
+.refresh-btn:hover{background:rgba(255,255,255,.1);color:rgba(255,255,255,.8)}
+.refresh-btn svg{transition:transform .5s}
+.refresh-btn:hover svg{transform:rotate(180deg)}
+
+/* ── MAIN ── */
+.main{margin-left:var(--nav-w);flex:1;height:100vh;overflow-y:auto;overflow-x:hidden}
+.page-section{display:none;padding:2rem 2rem 4rem;max-width:1100px}
+.page-section.active{display:block}
+
+/* PAGE TITLE */
+.page-header{margin-bottom:2rem}
+.page-title{font-family:'DM Serif Display',serif;font-size:2rem;color:var(--text);margin-bottom:.3rem}
+.page-sub{font-size:14px;color:var(--text2)}
+
+/* METRIC CARDS */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:2rem}
+@media(max-width:900px){.metrics{grid-template-columns:repeat(2,1fr)}}
+.mc{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.25rem 1.5rem}
+.mc-label{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:.6rem}
+.mc-val{font-family:'DM Serif Display',serif;font-size:2.4rem;color:var(--text);line-height:1}
+.mc-sub{font-size:12px;color:var(--text3);margin-top:.4rem}
+.mc-accent{color:var(--green)}
+
+/* GRID */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem}
+.g12{display:grid;grid-template-columns:1fr 2fr;gap:1rem;margin-bottom:1rem}
+@media(max-width:750px){.g2,.g3,.g12{grid-template-columns:1fr}}
+
+/* CARD */
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.25rem 1.5rem;margin-bottom:1rem}
+.card:last-child{margin-bottom:0}
+.card-title{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:1rem}
+
+/* RANK ROWS */
+.rr{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);cursor:pointer;border-radius:4px;padding-left:2px;transition:all .15s}
+.rr:last-child{border:none}
+.rr:hover{background:#F7F6F3;padding-left:6px}
+.rr-n{font-size:11px;color:var(--text3);width:14px;text-align:right;flex-shrink:0;font-weight:600}
+.rr-name{font-size:13px;font-weight:500;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rr-dept{font-size:11px;color:var(--text3);flex-shrink:0;max-width:76px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rr-bw{width:50px;flex-shrink:0}
+.rr-bg{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.rr-fill{height:3px;border-radius:2px;transition:width .6s cubic-bezier(.16,1,.3,1)}
+.rr-cnt{font-size:12px;font-weight:600;width:20px;text-align:right;flex-shrink:0}
+
+/* BADGE */
+.bdg{display:inline-block;padding:2px 9px;border-radius:5px;font-size:11px;font-weight:600}
+.bt{background:#E0F7F0;color:#0D8C58}
+.be{background:#EBF2FD;color:#2460B0}
+.bp{background:#FDF5E6;color:#B57010}
+.bo{background:#F2F2F2;color:#666}
+
+/* SECTION LABEL */
+.section-label{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);margin:1.75rem 0 .75rem;display:flex;align-items:center;gap:.5rem}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* CHART */
+.cw{position:relative;width:100%}
+.cw.h200{height:200px}
+.cw.h240{height:240px}
+.cw.h280{height:280px}
+
+/* YEAR TABS */
+.ytabs{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:1.25rem}
+.ytab{font-size:12px;font-weight:500;padding:5px 14px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;transition:all .15s;font-family:'Inter',sans-serif}
+.ytab:hover{border-color:var(--border2);color:var(--text)}
+.ytab.active{background:var(--text);color:#fff;border-color:var(--text)}
+.ytab-cmp{font-size:12px;font-weight:500;padding:5px 14px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;transition:all .15s;font-family:'Inter',sans-serif}
+.ytab-cmp:hover{color:var(--text2)}
+.ytab-cmp.active{background:var(--blue-bg);color:var(--blue);border-color:var(--blue)}
+.filter-row{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;margin-bottom:1.25rem;padding:1rem 1.25rem;background:var(--card);border:1px solid var(--border);border-radius:12px}
+.filter-lbl{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text3)}
+.filter-sep{width:1px;height:18px;background:var(--border);flex-shrink:0}
+.cmp-note{font-size:12px;color:var(--blue);background:var(--blue-bg);padding:4px 12px;border-radius:6px;margin-bottom:.75rem;display:none}
+.cmp-note.show{display:block}
+
+/* FEED */
+.feed-item{padding:.9rem 0;border-bottom:1px solid var(--border)}
+.feed-item:last-child{border:none}
+.fi-meta{display:flex;align-items:center;gap:7px;margin-bottom:.3rem;flex-wrap:wrap}
+.fi-from{font-size:13px;font-weight:600}
+.fi-arr{font-size:11px;color:var(--text3)}
+.fi-to{font-size:13px;font-weight:600;color:var(--blue)}
+.fi-date{font-size:11px;color:var(--text3);margin-left:auto}
+.fi-comment{font-size:12px;color:var(--text2);line-height:1.6;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+/* HEATMAP */
+.hm-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:5px;margin-top:.75rem}
+.hm-col{text-align:center}
+.hm-cell{aspect-ratio:1;border-radius:5px;margin-bottom:3px;transition:transform .15s;cursor:default}
+.hm-cell:hover{transform:scale(1.1)}
+.hm-mon{font-size:9px;color:var(--text3)}
+
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);backdrop-filter:blur(8px);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:2rem;width:min(520px,92vw);max-height:85vh;overflow-y:auto;transform:translateY(14px);transition:transform .25s}
+.overlay.open .modal{transform:translateY(0)}
+.m-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem}
+.m-title{font-family:'DM Serif Display',serif;font-size:1.4rem}
+.m-close{background:var(--bg);border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:7px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.m-close:hover{background:var(--red-bg);color:var(--red);border-color:var(--red)}
+
+/* LOADING */
+.loading{text-align:center;padding:6rem 0;color:var(--text3)}
+.spin{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:rot 1s linear infinite;margin:0 auto 1rem}
+@keyframes rot{to{transform:rotate(360deg)}}
+.err{background:var(--red-bg);border:1px solid rgba(232,80,59,.2);border-radius:10px;padding:1.25rem;color:var(--red);font-size:13px;line-height:1.7;margin:1.5rem 0}
+
+/* DELTA BADGES */
+.d-up{color:var(--green);font-size:11px;font-weight:600}
+.d-dn{color:var(--red);font-size:11px;font-weight:600}
+
+/* MOBILE NAV */
+.mob-nav-btn{display:none;position:fixed;top:1rem;left:1rem;z-index:100;background:var(--sidebar);border:none;border-radius:8px;width:36px;height:36px;cursor:pointer;align-items:center;justify-content:center}
+@media(max-width:640px){
+  .mob-nav-btn{display:flex}
+  .sidebar{transform:translateX(-100%);transition:transform .25s}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0}
+  .page-section{padding:1.25rem 1rem 3rem}
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sb-logo">
+    <div class="sb-logo-name">Alconost</div>
+    <div class="sb-logo-sub">Recognition Analytics</div>
+  </div>
+  <div class="sb-live">
+    <span class="sb-dot"></span>
+    <span class="sb-live-txt">Live · Google Sheets</span>
+    <span class="sb-live-time" id="sbTime">—</span>
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-section-label">Overview</div>
+    <a class="nav-item active" onclick="goTo('home')" href="#">
+      <span class="ico">🏠</span> Home
+    </a>
+    <div class="sb-section-label">Sections</div>
+    <a class="nav-item" onclick="goTo('stats')" href="#">
+      <span class="ico">📊</span> Statistics
+    </a>
+    <a class="nav-item" onclick="goTo('feed')" href="#">
+      <span class="ico">💬</span> Feed
+    </a>
+  </nav>
+  <div class="sb-footer">
+    <div class="fact-box">
+      <div class="fact-label">✨ Weekly insight</div>
+      <div class="fact-text" id="weeklyFact">Loading...</div>
+    </div>
+    <button class="refresh-btn" onclick="loadAll()">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      Refresh data
+    </button>
+  </div>
+</aside>
+
+<!-- MOBILE NAV BUTTON -->
+<button class="mob-nav-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+</button>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- HOME -->
+  <section class="page-section active" id="sec-home">
+    <div class="page-header">
+      <div class="page-title">Overview</div>
+      <div class="page-sub" id="homeSubtitle">2026 · live data</div>
+    </div>
+    <div id="homeContent"><div class="loading"><div class="spin"></div>Loading...</div></div>
+  </section>
+
+  <!-- STATS -->
+  <section class="page-section" id="sec-stats">
+    <div class="page-header">
+      <div class="page-title">Statistics</div>
+      <div class="page-sub">Filter by year, compare periods, explore trends</div>
+    </div>
+    <div id="statsContent"><div class="loading"><div class="spin"></div>Loading...</div></div>
+  </section>
+
+  <!-- FEED -->
+  <section class="page-section" id="sec-feed">
+    <div class="page-header">
+      <div class="page-title">Feed</div>
+      <div class="page-sub">Latest recognitions from Slack</div>
+    </div>
+    <div id="feedContent"><div class="loading"><div class="spin"></div>Loading...</div></div>
+  </section>
+
+</main>
+
+<!-- MODAL -->
+<div class="overlay" id="overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="m-head">
+      <div class="m-title" id="mTitle">—</div>
+      <button class="m-close" onclick="closeModal()">✕</button>
+    </div>
+    <div id="mBody"></div>
+  </div>
+</div>
+
+<script>
+const SID = '1eJIHvgf-S96vwRLJYw4DNyVsuvWUX4RQjTUzpo3u3rk';
+let charts={}, allRows=[], teamMap=[], histData=[];
+let statsYear='all', cmpYear=null;
+
+// ── UTILS ──────────────────────────────────────────────────
+function gviz(sh) {
+  return new Promise((resolve, reject) => {
+    const cbName = 'gvizCb_' + Math.random().toString(36).slice(2);
+    const script = document.createElement('script');
+    const timeout = setTimeout(() => {
+      delete window[cbName];
+      document.body.removeChild(script);
+      reject(new Error('Timeout loading sheet: ' + sh));
+    }, 10000);
+    window[cbName] = function(data) {
+      clearTimeout(timeout);
+      delete window[cbName];
+      try { document.body.removeChild(script); } catch(e) {}
+      try {
+        const tbl = data.table || (data.response && data.response.table) || data;
+        const cols = tbl.cols.map(c => (c.label||'').replace(/\s+[@\d].*$/, '').trim());
+        const rows = (tbl.rows||[]).map(r =>
+          Object.fromEntries(cols.map((c,i) => [c, r.c[i] ? (r.c[i].v !== undefined ? r.c[i].v : r.c[i].f) : null]))
+        );
+        resolve(rows);
+      } catch(e) { reject(e); }
+    };
+    script.src = `https://docs.google.com/spreadsheets/d/${SID}/gviz/tq?tqx=responseHandler:${cbName}&headers=1&sheet=${encodeURIComponent(sh)}`;
+    script.onerror = () => { clearTimeout(timeout); reject(new Error('Failed to load: ' + sh)); };
+    document.body.appendChild(script);
+  });
+}
+
+const x2d = v=>(v||v===0)?new Date(Math.round((v-25569)*86400000)):null;
+const fdate = d=>d?d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'—';
+const fmon = d=>d?d.toLocaleDateString('en-GB',{month:'short',year:'2-digit'}):'';
+const topN = (m,n)=>Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,n);
+const bclass = b=>{if(!b)return'bo';const l=b.toLowerCase();return l.includes('team')?'bt':l.includes('excel')?'be':l.includes('pass')?'bp':'bo';};
+const killChart = id=>{if(charts[id]){try{charts[id].destroy()}catch(e){}delete charts[id];}};
+
+function compute(rows){
+  const v=rows.filter(r=>r['Sender']||r['Receiver']||r['Badge']);
+  const sM={},rM={},stM={},rtM={},bM={},mM={};
+  v.forEach(r=>{
+    const s=r['Sender']||'';if(s)sM[s]=(sM[s]||0)+1;
+    const rc=r['Receiver']||'';if(rc)rM[rc]=(rM[rc]||0)+1;
+    const st=r._st;if(st)stM[st]=(stM[st]||0)+1;
+    const rt=r._rt;if(rt)rtM[rt]=(rtM[rt]||0)+1;
+    const b=r['Badge']||'';if(b)bM[b]=(bM[b]||0)+1;
+    const mk=r._mk;if(mk)mM[mk]=(mM[mk]||0)+1;
+  });
+  return{v,sM,rM,stM,rtM,bM,mM,total:v.length};
+}
+
+function mkChart(id,type,labels,datasets,opts){
+  killChart(id);
+  const ctx=document.getElementById(id);
+  if(!ctx)return;
+  charts[id]=new Chart(ctx,{type,data:{labels,datasets},options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:opts?.legend||false,labels:{font:{size:11,family:'Inter'},boxWidth:10,padding:14,color:'#6B6B6B'}}},
+    scales:type!=='doughnut'?{
+      x:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{size:10,family:'Inter'},color:'#ADADAD',maxRotation:40,autoSkip:false}},
+      y:{beginAtZero:true,ticks:{font:{size:10,family:'Inter'},color:'#ADADAD',stepSize:1},grid:{color:'rgba(0,0,0,.04)'}}
+    }:{},...(opts?.scales||{})
+  }});
+}
+
+// ── LOAD ──────────────────────────────────────────────────
+async function loadAll(){
+  document.getElementById('sbTime').textContent='loading...';
+  ['homeContent','statsContent','feedContent'].forEach(id=>{
+    document.getElementById(id).innerHTML='<div class="loading"><div class="spin"></div>Loading...</div>';
+  });
+  Object.keys(charts).forEach(k=>killChart(k));
+
+  try{
+    const [rR,tR,hR]=await Promise.allSettled([gviz('Raw_Data'),gviz('Teams'),gviz('History')]);
+    allRows=rR.status==='fulfilled'?rR.value:[];
+    const tRows=tR.status==='fulfilled'?tR.value:[];
+    histData=hR.status==='fulfilled'?hR.value:[];
+
+    teamMap={};
+    tRows.forEach(r=>{const u=r['User']||r[Object.keys(r)[0]];const t=r['Team']||r[Object.keys(r)[1]];if(u&&t)teamMap[u]=t;});
+
+    allRows.forEach(r=>{
+      r._d=x2d(r['Timestamp']);r._y=r._d?r._d.getFullYear():null;
+      r._dow=r._d?r._d.getDay():null;
+      r._mk=r._d?`${r._y}-${String(r._d.getMonth()+1).padStart(2,'0')}`:null;
+      r._st=teamMap[r['Sender']]||'';r._rt=teamMap[r['Receiver']]||'';
+    });
+
+    const years=[...new Set(allRows.map(r=>r._y).filter(Boolean))].sort();
+    statsYear='all';cmpYear=null;
+
+    renderHome();
+    renderStats(years);
+    renderFeed();
+    renderWeeklyFact();
+
+    document.getElementById('sbTime').textContent=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  }catch(e){
+    ['homeContent','statsContent','feedContent'].forEach(id=>{
+      document.getElementById(id).innerHTML=`<div class="err">⚠ ${e.message}<br><br>Make sure the sheet is public: File → Share → Anyone with the link → Viewer</div>`;
+    });
+    document.getElementById('sbTime').textContent='error';
+  }
+}
+
+// ── HOME ──────────────────────────────────────────────────
+function renderHome(){
+  const now=new Date();
+  const curYear=now.getFullYear();
+  const rows2026=allRows.filter(r=>r._y===curYear);
+  const D=compute(rows2026);
+  const Dall=compute(allRows);
+
+  const ts=topN(D.sM,5),tr=topN(D.rM,5),tst=topN(D.stM,3),trt=topN(D.rtM,3),tb=topN(D.bM,3);
+  const maxS=ts[0]?.[1]||1,maxR=tr[0]?.[1]||1,maxST=tst[0]?.[1]||1,maxRT=trt[0]?.[1]||1,maxB=tb[0]?.[1]||1;
+
+  const allDates=D.v.map(r=>r._d).filter(Boolean).sort((a,b)=>a-b);
+  const lastD=allDates[allDates.length-1];
+
+  document.getElementById('homeSubtitle').textContent=`${curYear} · ${D.total} recognitions so far`;
+
+  document.getElementById('homeContent').innerHTML=`
+    <!-- METRICS -->
+    <div class="metrics">
+      <div class="mc">
+        <div class="mc-label">Total ${curYear}</div>
+        <div class="mc-val mc-accent">${D.total}</div>
+        <div class="mc-sub">recognitions sent</div>
+      </div>
+      <div class="mc">
+        <div class="mc-label">Active senders</div>
+        <div class="mc-val">${Object.keys(D.sM).length}</div>
+        <div class="mc-sub">unique people</div>
+      </div>
+      <div class="mc">
+        <div class="mc-label">Received by</div>
+        <div class="mc-val">${Object.keys(D.rM).length}</div>
+        <div class="mc-sub">unique people</div>
+      </div>
+      <div class="mc">
+        <div class="mc-label">All time total</div>
+        <div class="mc-val">${Dall.total}</div>
+        <div class="mc-sub">since launch</div>
+      </div>
+    </div>
+
+    <!-- TOP PEOPLE -->
+    <div class="section-label">Top people</div>
+    <div class="g2">
+      <div class="card">
+        <div class="card-title">🏆 Top givers</div>
+        ${ts.map((e,i)=>`<div class="rr" onclick="drillPerson('${e[0].replace(/'/g,"\\'")}',${JSON.stringify(rows2026)})"><span class="rr-n">${i+1}</span><span class="rr-name">${e[0]}</span><span class="rr-dept">${teamMap[e[0]]||''}</span><div class="rr-bw"><div class="rr-bg"><div class="rr-fill" style="width:${Math.round(e[1]/maxS*100)}%;background:#2DB87A"></div></div></div><span class="rr-cnt">${e[1]}</span></div>`).join('')}
+      </div>
+      <div class="card">
+        <div class="card-title">⭐ Top receivers</div>
+        ${tr.map((e,i)=>`<div class="rr" onclick="drillPerson('${e[0].replace(/'/g,"\\'")}',${JSON.stringify(rows2026)})"><span class="rr-n">${i+1}</span><span class="rr-name">${e[0]}</span><span class="rr-dept">${teamMap[e[0]]||''}</span><div class="rr-bw"><div class="rr-bg"><div class="rr-fill" style="width:${Math.round(e[1]/maxR*100)}%;background:#3B7FE8"></div></div></div><span class="rr-cnt">${e[1]}</span></div>`).join('')}
+      </div>
+    </div>
+
+    <!-- BADGES -->
+    <div class="section-label">Top badges</div>
+    <div class="card">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;text-align:center">
+        ${tb.map((e,i)=>`
+          <div style="padding:1rem;background:${i===0?'#EBF9F2':i===1?'#EBF2FD':'#FDF5E6'};border-radius:10px">
+            <div style="font-size:1.8rem;font-family:'DM Serif Display',serif;color:${i===0?'#2DB87A':i===1?'#3B7FE8':'#F5A623'};margin-bottom:.25rem">${e[1]}</div>
+            <div style="font-size:13px;font-weight:600;color:${i===0?'#0D8C58':i===1?'#2460B0':'#B57010'}">${e[0]}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <!-- DEPARTMENTS -->
+    <div class="section-label">Top departments</div>
+    <div class="g2">
+      <div class="card">
+        <div class="card-title">🏢 Top sender depts</div>
+        ${tst.map((e,i)=>`<div class="rr" onclick="drillDept('${e[0]}',${JSON.stringify(rows2026)})"><span class="rr-n">${i+1}</span><span class="rr-name">${e[0]}</span><div class="rr-bw"><div class="rr-bg"><div class="rr-fill" style="width:${Math.round(e[1]/maxST*100)}%;background:#2DB87A"></div></div></div><span class="rr-cnt">${e[1]}</span></div>`).join('')}
+      </div>
+      <div class="card">
+        <div class="card-title">🏢 Top receiver depts</div>
+        ${trt.map((e,i)=>`<div class="rr" onclick="drillDept('${e[0]}',${JSON.stringify(rows2026)})"><span class="rr-n">${i+1}</span><span class="rr-name">${e[0]}</span><div class="rr-bw"><div class="rr-bg"><div class="rr-fill" style="width:${Math.round(e[1]/maxRT*100)}%;background:#3B7FE8"></div></div></div><span class="rr-cnt">${e[1]}</span></div>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
+// ── STATS ─────────────────────────────────────────────────
+function renderStats(years){
+  Object.keys(charts).forEach(k=>{if(k.startsWith('s_'))killChart(k);});
+
+  const rows=statsYear==='all'?allRows:allRows.filter(r=>r._y==statsYear);
+  const cRows=cmpYear?allRows.filter(r=>r._y==cmpYear):null;
+  const D=compute(rows),C=cRows?compute(cRows):null;
+
+  const ts=topN(D.sM,5),tr=topN(D.rM,5),tst=topN(D.stM,3),trt=topN(D.rtM,3),tb=topN(D.bM,5);
+  const maxS=ts[0]?.[1]||1,maxR=tr[0]?.[1]||1,maxST=tst[0]?.[1]||1,maxRT=trt[0]?.[1]||1,maxB=tb[0]?.[1]||1;
+  const cmS=C?Object.fromEntries(topN(C.sM,10)):{};
+  const cmR=C?Object.fromEntries(topN(C.rM,10)):{};
+  const cmST=C?Object.fromEntries(topN(C.stM,10)):{};
+  const cmRT=C?Object.fromEntries(topN(C.rtM,10)):{};
+  const cmB=C?Object.fromEntries(topN(C.bM,10)):{};
+
+  const allMks=[...new Set([...Object.keys(D.mM),...(C?Object.keys(C.mM):[])])].sort();
+  const mLabels=allMks.map(mk=>{const[y,m]=mk.split('-');return fmon(new Date(+y,+m-1,1));});
+
+  const monthCount=Object.keys(D.mM).length||1;
+  const avgPerMonth=(D.total/monthCount).toFixed(1);
+  const dowMap={};D.v.forEach(r=>{if(r._dow!=null)dowMap[r._dow]=(dowMap[r._dow]||0)+1;});
+  const dowNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const peakDow=Object.entries(dowMap).sort((a,b)=>b[1]-a[1])[0];
+
+  // History totals
+  const hPeriods=[],hVals=[];
+  if(histData.length){
+    histData.forEach(r=>{
+      const metric=String(r['Metric']||r[Object.keys(r)[0]]||'').toLowerCase();
+      if(metric.includes('total')){
+        Object.keys(r).slice(1).forEach(k=>{const v=r[k];if(v&&!isNaN(+v)&&+v>0&&k&&k.trim()){hPeriods.push(k.trim());hVals.push(+v);}});
+      }
+    });
+  }
+  const allDates=D.v.map(r=>r._d).filter(Boolean).sort((a,b)=>b-a);
+  const liveYear=statsYear==='all'?(allDates[0]?allDates[0].getFullYear():new Date().getFullYear()):statsYear;
+  if(hPeriods.length&&!hPeriods.find(p=>String(p).includes(String(liveYear)))){hPeriods.push(`${liveYear}*`);hVals.push(D.total);}
+
+  // Month heatmap
+  const monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const hmD=Array(12).fill(0);D.v.forEach(r=>{if(r._d)hmD[r._d.getMonth()]++;});
+  const hmMax=Math.max(...hmD,1);
+
+  const dd=(a,b)=>{
+    if(b===undefined||b===null)return'';
+    const d=a-b;
+    if(!d)return`<span style="color:var(--text3);font-size:10px">—</span>`;
+    return d>0?`<span class="d-up">+${d}</span>`:`<span class="d-dn">${d}</span>`;
+  };
+
+  function rrH(entries,maxV,color,showDept,cmpMap,clickData){
+    return entries.map((e,i)=>`
+      <div class="rr" onclick="drillPerson('${e[0].replace(/'/g,"\\'")}',${JSON.stringify(clickData)})">
+        <span class="rr-n">${i+1}</span>
+        <span class="rr-name">${e[0]}</span>
+        ${showDept?`<span class="rr-dept">${teamMap[e[0]]||''}</span>`:''}
+        <div class="rr-bw"><div class="rr-bg"><div class="rr-fill" style="width:${Math.round(e[1]/maxV*100)}%;background:${color}"></div></div></div>
+        <span class="rr-cnt">${e[1]}</span>
+        ${C?`<span style="width:28px;text-align:right;font-size:11px;flex-shrink:0">${dd(e[1],cmpMap[e[0]])}</span>`:''}
+      </div>`).join('');
+  }
+
+  document.getElementById('statsContent').innerHTML=`
+    <!-- FILTERS -->
+    <div class="filter-row">
+      <span class="filter-lbl">Year</span>
+      <button class="ytab ${statsYear==='all'?'active':''}" onclick="setStatsYear('all')">All time</button>
+      ${years.map(y=>`<button class="ytab ${statsYear==y?'active':''}" onclick="setStatsYear(${y})">${y}</button>`).join('')}
+      ${years.length>1?`
+        <div class="filter-sep"></div>
+        <span class="filter-lbl">Compare</span>
+        <button class="ytab-cmp ${!cmpYear?'active':''}" onclick="setCmpYear(null)">Off</button>
+        ${years.filter(y=>y!=statsYear&&statsYear!='all').map(y=>`<button class="ytab-cmp ${cmpYear==y?'active':''}" onclick="setCmpYear(${y})">${y}</button>`).join('')}
+      `:''}
+    </div>
+    <div class="cmp-note ${C?'show':''}" id="cmpNote">Comparing <strong>${statsYear}</strong> vs <strong>${cmpYear}</strong> — delta shown next to each value</div>
+
+    <!-- METRICS ROW -->
+    <div class="metrics" style="grid-template-columns:repeat(3,1fr)">
+      <div class="mc"><div class="mc-label">Total recognitions</div><div class="mc-val mc-accent">${D.total}</div>${C?`<div class="mc-sub">${dd(D.total,C.total)} vs ${cmpYear}</div>`:'<div class="mc-sub">&nbsp;</div>'}</div>
+      <div class="mc"><div class="mc-label">Avg per month</div><div class="mc-val">${avgPerMonth}</div><div class="mc-sub">&nbsp;</div></div>
+      <div class="mc"><div class="mc-label">Most active day</div><div class="mc-val" style="font-size:1.6rem;padding-top:4px">${peakDow?dowNames[+peakDow[0]]:'—'}</div><div class="mc-sub">&nbsp;</div></div>
+    </div>
+
+    <!-- PEOPLE -->
+    <div class="section-label">People</div>
+    <div class="g2">
+      <div class="card"><div class="card-title">Top givers</div>${rrH(ts,maxS,'#2DB87A',true,cmS,rows)}</div>
+      <div class="card"><div class="card-title">Top receivers</div>${rrH(tr,maxR,'#3B7FE8',true,cmR,rows)}</div>
+    </div>
+
+    <!-- DEPTS -->
+    <div class="section-label">Departments <span style="font-size:11px;font-weight:400;color:var(--text3);text-transform:none;letter-spacing:0">— click to drill down</span></div>
+    <div class="g2">
+      <div class="card"><div class="card-title">Top sender depts</div>${topN(D.stM,3).map((e,i)=>`<div class="rr" onclick="drillDept('${e[0]}',${JSON.stringify(rows)})"><span class="rr-n">${i+1}</span><span class="rr-name">${e[0]}</span><div class="rr-bw"><div class="rr-bg"><div class="rr-fill" style="width:${Math.round(e[1]/maxST*100)}%;background:#2DB87A"></div></div></div><span class="rr-cnt">${e[1]}</span>${C?`<span style="width:28px;text-align:right;font-size:11px;flex-shrink:0">${dd(e[1],cmST[e[0]])}</span>`:''}</div>`).join('')}</div>
+      <div class="card"><div class="card-title">Top receiver depts</div>${topN(D.rtM,3).map((e,i)=>`<div class="rr" onclick="drillDept('${e[0]}',${JSON.stringify(rows)})"><span class="rr-n">${i+1}</span><span class="rr-name">${e[0]}</span><div class="rr-bw"><div class="rr-bg"><div class="rr-fill" style="width:${Math.round(e[1]/maxRT*100)}%;background:#3B7FE8"></div></div></div><span class="rr-cnt">${e[1]}</span>${C?`<span style="width:28px;text-align:right;font-size:11px;flex-shrink:0">${dd(e[1],cmRT[e[0]])}</span>`:''}</div>`).join('')}</div>
+    </div>
+
+    <!-- BADGES -->
+    <div class="section-label">Badges</div>
+    <div class="g2">
+      <div class="card"><div class="card-title">Most popular</div>${tb.map((e,i)=>`<div class="rr"><span class="rr-n">${i+1}</span><span class="rr-name"><span class="bdg ${bclass(e[0])}">${e[0]}</span></span><div class="rr-bw"><div class="rr-bg"><div class="rr-fill" style="width:${Math.round(e[1]/maxB*100)}%;background:#F5A623"></div></div></div><span class="rr-cnt">${e[1]}</span>${C?`<span style="width:28px;text-align:right;font-size:11px;flex-shrink:0">${dd(e[1],cmB[e[0]])}</span>`:''}</div>`).join('')}</div>
+      <div class="card"><div class="card-title">Distribution</div><div class="cw h200"><canvas id="s_badgeChart"></canvas></div></div>
+    </div>
+
+    <!-- MONTHLY ACTIVITY HEATMAP -->
+    <div class="section-label">Monthly activity</div>
+    <div class="card">
+      <div class="card-title">Recognitions per month</div>
+      <div class="hm-grid">
+        ${monthNames.map((m,i)=>`
+          <div class="hm-col">
+            <div class="hm-cell" style="background:${hmD[i]>0?`rgba(45,184,122,${0.1+0.9*(hmD[i]/hmMax)})`:'#F2F2F2'}" title="${m}: ${hmD[i]}"></div>
+            <div class="hm-mon">${m}</div>
+            ${hmD[i]?`<div style="font-size:9px;color:var(--text3);text-align:center">${hmD[i]}</div>`:''}
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <!-- TRENDS -->
+    <div class="section-label">Trends</div>
+    <div class="card">
+      <div class="card-title">Monthly trend${C?` — ${statsYear} vs ${cmpYear}`:''}${statsYear!=='all'?` · ${statsYear}`:''}</div>
+      <div class="cw h280"><canvas id="s_trendChart"></canvas></div>
+    </div>
+
+    ${hPeriods.length?`
+    <div class="card">
+      <div class="card-title">All-time by period — historical data + live <span style="color:var(--green)">★</span></div>
+      <div class="cw h240"><canvas id="s_histChart"></canvas></div>
+    </div>`:''}
+  `;
+
+  setTimeout(()=>{
+    // Trend
+    const ds=[{
+      label:statsYear==='all'?'All':String(statsYear),
+      data:allMks.map(mk=>D.mM[mk]||0),
+      backgroundColor:'rgba(45,184,122,.12)',borderColor:'#2DB87A',
+      borderWidth:2,borderRadius:3,fill:true,tension:.3
+    }];
+    if(C) ds.push({
+      label:String(cmpYear),
+      data:allMks.map(mk=>C.mM[mk]||0),
+      backgroundColor:'rgba(59,127,232,.1)',borderColor:'#3B7FE8',
+      borderWidth:2,borderRadius:3,fill:true,tension:.3
+    });
+    mkChart('s_trendChart','bar',mLabels,ds,{legend:!!C});
+
+    // Donut
+    if(tb.length){
+      killChart('s_badgeChart');
+      const ctx=document.getElementById('s_badgeChart');
+      if(ctx) charts['s_badgeChart']=new Chart(ctx,{type:'doughnut',data:{
+        labels:tb.map(e=>e[0]),
+        datasets:[{data:tb.map(e=>e[1]),backgroundColor:['#2DB87A','#3B7FE8','#F5A623','#E8503B','#7C5CBF'],borderWidth:0,hoverOffset:4}]
+      },options:{responsive:true,maintainAspectRatio:false,cutout:'65%',
+        plugins:{legend:{position:'right',labels:{font:{size:11,family:'Inter'},boxWidth:10,padding:10,color:'#6B6B6B'}}}}});
+    }
+
+    // Hist
+    if(hPeriods.length){
+      const ctx=document.getElementById('s_histChart');
+      if(ctx){killChart('s_histChart');charts['s_histChart']=new Chart(ctx,{type:'bar',data:{
+        labels:hPeriods,
+        datasets:[{data:hVals,
+          backgroundColor:hPeriods.map((p,i)=>p.includes('*')?'rgba(45,184,122,.25)':'rgba(59,127,232,.18)'),
+          borderColor:hPeriods.map((p,i)=>p.includes('*')?'#2DB87A':'#3B7FE8'),
+          borderWidth:2,borderRadius:6
+        }]
+      },options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false}},
+        scales:{x:{grid:{display:false},ticks:{color:'#ADADAD',font:{size:10,family:'Inter'}}},
+                y:{beginAtZero:true,ticks:{color:'#ADADAD',font:{size:10,family:'Inter'}},grid:{color:'rgba(0,0,0,.04)'}}}}});}
+    }
+  },80);
+}
+
+// ── FEED ──────────────────────────────────────────────────
+function renderFeed(){
+  const recent=[...allRows].filter(r=>r._d&&(r['Sender']||r['Receiver'])).sort((a,b)=>b._d-a._d).slice(0,20);
+  document.getElementById('feedContent').innerHTML=`
+    <div class="card" style="padding:0;overflow:hidden">
+      ${recent.map(r=>`
+        <div class="feed-item" style="padding:.9rem 1.5rem">
+          <div class="fi-meta">
+            <span class="fi-from">${r['Sender']||'?'}</span>
+            <span class="fi-arr">→</span>
+            <span class="fi-to">${r['Receiver']||'?'}</span>
+            <span class="bdg ${bclass(r['Badge']||'')} " style="margin-left:2px">${r['Badge']||''}</span>
+            <span class="fi-date">${fdate(r._d)}</span>
+          </div>
+          ${r['Comment']?`<div class="fi-comment">${String(r['Comment']).replace(/:[a-z_\-+]+:/g,'').replace(/<[^>]*>/g,'').trim().slice(0,280)}</div>`:''}
+        </div>`).join('')}
+    </div>`;
+}
+
+// ── WEEKLY FACT ────────────────────────────────────────────
+function renderWeeklyFact(){
+  if(!allRows.length){document.getElementById('weeklyFact').textContent='No data yet.';return;}
+  const now=new Date();
+  const curMk=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const thisMonth=allRows.filter(r=>r._mk===curMk);
+
+  const facts=[];
+
+  // Most active day this week
+  const dowMap={};
+  allRows.filter(r=>r._dow!=null).forEach(r=>{dowMap[r._dow]=(dowMap[r._dow]||0)+1;});
+  const dowNames=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const peak=Object.entries(dowMap).sort((a,b)=>b[1]-a[1])[0];
+  if(peak) facts.push(`Most recognitions happen on <span class="fact-accent">${dowNames[+peak[0]]}</span>`);
+
+  // Top dept this month
+  const rtM={};
+  thisMonth.forEach(r=>{if(r._rt){rtM[r._rt]=(rtM[r._rt]||0)+1;}});
+  const topDept=Object.entries(rtM).sort((a,b)=>b[1]-a[1])[0];
+  if(topDept) facts.push(`This month, <span class="fact-accent">${topDept[0]}</span> is the most recognized dept`);
+
+  // Most popular badge overall
+  const bM={};
+  allRows.forEach(r=>{const b=r['Badge'];if(b)bM[b]=(bM[b]||0)+1;});
+  const topB=Object.entries(bM).sort((a,b)=>b[1]-a[1])[0];
+  if(topB) facts.push(`All-time favourite badge: <span class="fact-accent">${topB[0]}</span> (${topB[1]} times)`);
+
+  // Pick one based on week number
+  const week=Math.floor(now.getDate()/7);
+  const fact=facts[week%facts.length]||facts[0];
+  document.getElementById('weeklyFact').innerHTML=fact||'No data yet.';
+}
+
+// ── NAVIGATION ────────────────────────────────────────────
+function goTo(page){
+  document.querySelectorAll('.page-section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById(`sec-${page}`).classList.add('active');
+  document.querySelector(`[onclick="goTo('${page}')"]`).classList.add('active');
+  document.getElementById('sidebar').classList.remove('open');
+}
+
+function setStatsYear(y){
+  statsYear=y;
+  if(cmpYear==y) cmpYear=null;
+  const years=[...new Set(allRows.map(r=>r._y).filter(Boolean))].sort();
+  renderStats(years);
+}
+function setCmpYear(y){
+  cmpYear=y;
+  const years=[...new Set(allRows.map(r=>r._y).filter(Boolean))].sort();
+  renderStats(years);
+}
+
+// ── DRILL DOWN ────────────────────────────────────────────
+function drillDept(dept,rows){
+  const rs=(rows||allRows).filter(r=>r._rt===dept||r._st===dept);
+  const asR={},asS={};
+  rs.forEach(r=>{if(r._rt===dept){asR[r['Receiver']]=(asR[r['Receiver']]||0)+1;}if(r._st===dept){asS[r['Sender']]=(asS[r['Sender']]||0)+1;}});
+  const tR=topN(asR,6),tS=topN(asS,6);
+  const mxR=tR[0]?.[1]||1,mxS=tS[0]?.[1]||1;
+  document.getElementById('mTitle').textContent=`${dept}`;
+  document.getElementById('mBody').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1.25rem">
+      <div style="text-align:center;padding:1rem;background:var(--green-bg);border-radius:10px">
+        <div style="font-family:'DM Serif Display',serif;font-size:2rem;color:var(--green)">${Object.values(asR).reduce((a,b)=>a+b,0)}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:.2rem">received</div>
+      </div>
+      <div style="text-align:center;padding:1rem;background:var(--blue-bg);border-radius:10px">
+        <div style="font-family:'DM Serif Display',serif;font-size:2rem;color:var(--blue)">${Object.values(asS).reduce((a,b)=>a+b,0)}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:.2rem">sent</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+      <div>
+        <div class="card-title">Top receivers</div>
+        ${tR.map((e,i)=>`<div class="rr"><span class="rr-n">${i+1}</span><span class="rr-name">${e[0]}</span><div class="rr-bw"><div class="rr-bg"><div class="rr-fill" style="width:${Math.round(e[1]/mxR*100)}%;background:#2DB87A"></div></div></div><span class="rr-cnt">${e[1]}</span></div>`).join('')||'<p style="font-size:13px;color:var(--text3)">—</p>'}
+      </div>
+      <div>
+        <div class="card-title">Top senders</div>
+        ${tS.map((e,i)=>`<div class="rr"><span class="rr-n">${i+1}</span><span class="rr-name">${e[0]}</span><div class="rr-bw"><div class="rr-bg"><div class="rr-fill" style="width:${Math.round(e[1]/mxS*100)}%;background:#3B7FE8"></div></div></div><span class="rr-cnt">${e[1]}</span></div>`).join('')||'<p style="font-size:13px;color:var(--text3)">—</p>'}
+      </div>
+    </div>`;
+  document.getElementById('overlay').classList.add('open');
+}
+
+function drillPerson(name,rows){
+  const sent=(rows||allRows).filter(r=>r['Sender']===name&&r._d).sort((a,b)=>b._d-a._d);
+  const recv=(rows||allRows).filter(r=>r['Receiver']===name&&r._d).sort((a,b)=>b._d-a._d);
+  document.getElementById('mTitle').textContent=name;
+  document.getElementById('mBody').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1.25rem">
+      <div style="text-align:center;padding:1rem;background:var(--green-bg);border-radius:10px">
+        <div style="font-family:'DM Serif Display',serif;font-size:2rem;color:var(--green)">${sent.length}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:.2rem">sent</div>
+      </div>
+      <div style="text-align:center;padding:1rem;background:var(--blue-bg);border-radius:10px">
+        <div style="font-family:'DM Serif Display',serif;font-size:2rem;color:var(--blue)">${recv.length}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:.2rem">received</div>
+      </div>
+    </div>
+    <div class="card-title">Recent sent</div>
+    ${sent.slice(0,4).map(r=>`<div class="feed-item"><div class="fi-meta"><span class="fi-arr">→</span><span class="fi-to">${r['Receiver']||'?'}</span><span class="bdg ${bclass(r['Badge']||'')} " style="margin-left:4px">${r['Badge']||''}</span><span class="fi-date">${fdate(r._d)}</span></div>${r['Comment']?`<div class="fi-comment">${String(r['Comment']).replace(/:[a-z_\-+]+:/g,'').trim().slice(0,180)}</div>`:''}</div>`).join('')||'<p style="font-size:13px;color:var(--text3);padding:.5rem 0">Nothing yet</p>'}
+    ${recv.length?`<div class="card-title" style="margin-top:1rem">Recent received</div>${recv.slice(0,3).map(r=>`<div class="feed-item"><div class="fi-meta"><span class="fi-from">${r['Sender']||'?'}</span><span class="fi-arr">→</span><span class="bdg ${bclass(r['Badge']||'')} ">${r['Badge']||''}</span><span class="fi-date">${fdate(r._d)}</span></div>${r['Comment']?`<div class="fi-comment">${String(r['Comment']).replace(/:[a-z_\-+]+:/g,'').trim().slice(0,180)}</div>`:''}</div>`).join('')}`:''}`;
+  document.getElementById('overlay').classList.add('open');
+}
+
+function closeModal(e){if(!e||e.target===document.getElementById('overlay'))document.getElementById('overlay').classList.remove('open');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+loadAll();
+</script>
+</body>
+</html>
