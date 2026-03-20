@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recognition Dashboard · Alconost</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0F0F13;--bg2:#18181F;--bg3:#22222C;--bg4:#2C2C38;
+  --border:rgba(255,255,255,.08);--border2:rgba(255,255,255,.15);
+  --text:#F0EEF8;--text2:#9896A8;--text3:#5C5A6E;
+  --green:#00E096;--blue:#4D9EFF;--amber:#FFB84D;--pink:#FF6B9D;--purple:#A78BFF;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif}
+body{overflow-x:hidden}
+
+/* BG GRID */
+body::before{content:'';position:fixed;inset:0;
+  background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+  background-size:48px 48px;pointer-events:none;z-index:0}
+body::after{content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse 70% 50% at 15% 0%,rgba(0,224,150,.05) 0%,transparent 55%),
+             radial-gradient(ellipse 50% 40% at 85% 100%,rgba(77,158,255,.05) 0%,transparent 50%);
+  pointer-events:none;z-index:0}
+
+.wrap{position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:2.5rem 1.5rem 5rem}
+
+/* TOP NAV */
+.topnav{display:flex;align-items:center;justify-content:space-between;margin-bottom:3.5rem;flex-wrap:wrap;gap:1rem}
+.logo{font-family:'Syne',sans-serif;font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.logo span{color:var(--green)}
+.nav-right{display:flex;align-items:center;gap:10px}
+.live-pill{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--green);background:rgba(0,224,150,.1);border:1px solid rgba(0,224,150,.2);padding:4px 12px;border-radius:100px}
+.dot{width:5px;height:5px;border-radius:50%;background:var(--green);animation:blink 2s ease infinite;flex-shrink:0}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+#uptime{font-size:11px;color:var(--text3);font-variant-numeric:tabular-nums}
+.rbtn{font-family:'Inter',sans-serif;font-size:12px;font-weight:500;padding:6px 14px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:5px}
+.rbtn:hover{background:var(--bg3);color:var(--text)}
+.rbtn svg{transition:transform .5s}
+.rbtn:hover svg{transform:rotate(180deg)}
+
+/* HERO */
+.hero{margin-bottom:3rem}
+.hero-eyebrow{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--green);margin-bottom:.75rem}
+.hero-title{font-family:'Syne',sans-serif;font-size:clamp(2.8rem,7vw,5.5rem);font-weight:800;line-height:.95;letter-spacing:-.025em}
+.hero-title .dim{color:var(--text3)}
+.hero-sub{font-size:14px;color:var(--text2);margin-top:1rem;line-height:1.7;max-width:480px}
+
+/* TOTAL HERO NUMBER */
+.total-block{display:flex;align-items:flex-end;gap:1.5rem;margin-bottom:3rem;padding:2rem;background:var(--bg2);border:1px solid var(--border);border-radius:20px;position:relative;overflow:hidden}
+.total-block::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;background:radial-gradient(circle,rgba(0,224,150,.12),transparent 70%);border-radius:50%}
+.total-num{font-family:'Syne',sans-serif;font-size:clamp(4rem,12vw,8rem);font-weight:800;line-height:1;color:var(--green);position:relative}
+.total-info{position:relative}
+.total-label{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:.4rem}
+.total-year{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;color:var(--text2)}
+.total-sub{font-size:12px;color:var(--text3);margin-top:.25rem}
+
+/* SECTION */
+.sec-title{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);margin-bottom:1rem;display:flex;align-items:center;gap:.6rem}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* GRID */
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:2rem}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:2rem}
+@media(max-width:640px){.g3,.g2{grid-template-columns:1fr}}
+
+/* CARD */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1.25rem 1.5rem;transition:border-color .2s,transform .2s}
+.card:hover{border-color:var(--border2);transform:translateY(-2px)}
+.card-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:1rem}
+
+/* PERSON ROW */
+.pr{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--border)}
+.pr:last-child{border:none}
+.pr-rank{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--border2);width:24px;flex-shrink:0;line-height:1}
+.pr-name{font-size:14px;font-weight:500;color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pr-dept{font-size:11px;color:var(--text3);flex-shrink:0;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pr-bar-wrap{width:56px;flex-shrink:0}
+.pr-bar-bg{height:3px;background:var(--bg4);border-radius:2px;overflow:hidden}
+.pr-bar-fill{height:3px;border-radius:2px;transition:width .8s cubic-bezier(.16,1,.3,1)}
+.pr-count{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;width:24px;text-align:right;flex-shrink:0}
+
+/* BADGE CARD */
+.badge-big{text-align:center;padding:1.5rem 1rem;border-radius:14px;border:1px solid var(--border);background:var(--bg2);transition:transform .2s,border-color .2s}
+.badge-big:hover{transform:translateY(-3px);border-color:var(--border2)}
+.badge-num{font-family:'Syne',sans-serif;font-size:2.8rem;font-weight:800;line-height:1;margin-bottom:.3rem}
+.badge-name{font-size:13px;font-weight:600;margin-bottom:.2rem}
+.badge-label{font-size:10px;color:var(--text3);font-weight:500;letter-spacing:.06em;text-transform:uppercase}
+
+/* DEPT ROW */
+.dr{display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid var(--border)}
+.dr:last-child{border:none}
+.dr-rank{font-size:10px;font-weight:700;color:var(--text3);width:14px;text-align:right;flex-shrink:0}
+.dr-name{font-size:13px;font-weight:500;color:var(--text);flex:1}
+.dr-bar-wrap{width:60px;flex-shrink:0}
+.dr-bar-bg{height:4px;background:var(--bg4);border-radius:2px;overflow:hidden}
+.dr-bar-fill{height:4px;border-radius:2px;transition:width .8s cubic-bezier(.16,1,.3,1)}
+.dr-count{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;width:28px;text-align:right;flex-shrink:0}
+
+/* CHART SECTION */
+.chart-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1.5rem;margin-bottom:2rem}
+.chart-title{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:1.5rem}
+.cw{position:relative;width:100%;height:280px}
+
+/* LOADING / ERROR */
+.loading{text-align:center;padding:5rem 0;color:var(--text3)}
+.spin{width:28px;height:28px;border:2px solid var(--bg4);border-top-color:var(--green);border-radius:50%;animation:rot 1s linear infinite;margin:0 auto 1rem}
+@keyframes rot{to{transform:rotate(360deg)}}
+.err{background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.2);border-radius:10px;padding:1.25rem;color:#FF6B6B;font-size:13px;line-height:1.7;margin:1rem 0}
+
+/* FOOTER */
+footer{margin-top:4rem;padding-top:1.5rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;flex-wrap:wrap;gap:1rem}
+footer p{font-size:11px;color:var(--text3)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <nav class="topnav">
+    <div class="logo">ALCONOST · <span>REC</span></div>
+    <div class="nav-right">
+      <div class="live-pill"><span class="dot"></span>Live</div>
+      <span id="uptime">—</span>
+      <button class="rbtn" onclick="loadAll()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        Refresh
+      </button>
+    </div>
+  </nav>
+
+  <div class="hero">
+    <div class="hero-eyebrow">People & Culture · Alconost</div>
+    <div class="hero-title">Recognition<br><span class="dim">Analytics</span></div>
+    <p class="hero-sub">Real-time data from Slack — updated automatically every time someone sends a recognition.</p>
+  </div>
+
+  <div id="root"><div class="loading"><div class="spin"></div>Loading data...</div></div>
+
+</div>
+
+<script>
+const SID = '1eJIHvgf-S96vwRLJYw4DNyVsuvWUX4RQjTUzpo3u3rk';
+let chartObj = null;
+
+// ── JSONP FETCH ────────────────────────────────────────────
+function fetchSheet(sheetName) {
+  return new Promise((resolve, reject) => {
+    const cb = 'cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+    const script = document.createElement('script');
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new Error('Timeout: ' + sheetName));
+    }, 12000);
+
+    function cleanup() {
+      clearTimeout(timer);
+      delete window[cb];
+      if (script.parentNode) script.parentNode.removeChild(script);
+    }
+
+    window[cb] = function(resp) {
+      cleanup();
+      try {
+        const tbl = resp.table;
+        // Get rows as raw arrays (no header parsing issues)
+        const rows = (tbl.rows || []).map(r =>
+          (r.c || []).map(c => c ? (c.v !== undefined ? c.v : c.f) : null)
+        );
+        resolve(rows);
+      } catch(e) { reject(e); }
+    };
+
+    script.onerror = () => { cleanup(); reject(new Error('Failed: ' + sheetName)); };
+    // Use tqx=responseHandler to get JSONP, no headers param needed since we use raw positions
+    script.src = `https://docs.google.com/spreadsheets/d/${SID}/gviz/tq?tqx=responseHandler:${cb}&sheet=${encodeURIComponent(sheetName)}`;
+    document.head.appendChild(script);
+  });
+}
+
+async function loadAll() {
+  document.getElementById('uptime').textContent = 'loading...';
+  document.getElementById('root').innerHTML = '<div class="loading"><div class="spin"></div>Loading data...</div>';
+  if (chartObj) { try { chartObj.destroy(); } catch(e) {} chartObj = null; }
+
+  try {
+    const [dashRows, histRows] = await Promise.all([
+      fetchSheet('Dashboard'),
+      fetchSheet('History')
+    ]);
+
+    // ── PARSE DASHBOARD ────────────────────────────────────
+    // Structure (0-indexed rows, cols):
+    // Row 0: headers row 1 (🏆 Top Senders / Top Recognized)
+    // Row 1: sub-headers (Sender | Count / Receiver | Count)
+    // Row 2-6: top senders (col0=name, col1=count) / top receivers (col4=name, col5=count)
+    // Row 11: "🏆 Top Sender Departments"
+    // Row 12: dept headers
+    // Row 13-15: sender depts (col0, col1) / receiver depts (col4, col5)
+    // Row 17: "🎖️ Most Popular Badges"
+    // Row 18: badge headers
+    // Row 19-21: badges (col0=name, col1=count)
+    // Row 23: "📊 Total Recognitions 2026" | count
+
+    // Top senders (rows 2-6, cols 0-1)
+    const topSenders = [];
+    for (let i = 2; i <= 6; i++) {
+      const r = dashRows[i];
+      if (r && r[0] && r[1] !== null) topSenders.push({ name: String(r[0]), count: Number(r[1]) });
+    }
+
+    // Top receivers (rows 2-6, cols 4-5)
+    const topReceivers = [];
+    for (let i = 2; i <= 6; i++) {
+      const r = dashRows[i];
+      if (r && r[4] && r[5] !== null) topReceivers.push({ name: String(r[4]), count: Number(r[5]) });
+    }
+
+    // Sender depts (rows 13-15, cols 0-1)
+    const senderDepts = [];
+    for (let i = 13; i <= 15; i++) {
+      const r = dashRows[i];
+      if (r && r[0] && r[1] !== null) senderDepts.push({ name: String(r[0]), count: Number(r[1]) });
+    }
+
+    // Receiver depts (rows 13-15, cols 4-5)
+    const receiverDepts = [];
+    for (let i = 13; i <= 15; i++) {
+      const r = dashRows[i];
+      if (r && r[4] && r[5] !== null) receiverDepts.push({ name: String(r[4]), count: Number(r[5]) });
+    }
+
+    // Badges (rows 19-21, cols 0-1)
+    const badges = [];
+    for (let i = 19; i <= 21; i++) {
+      const r = dashRows[i];
+      if (r && r[0] && r[1] !== null) badges.push({ name: String(r[0]), count: Number(r[1]) });
+    }
+
+    // Total 2026 (row 23, col 1)
+    let total2026 = 0;
+    if (dashRows[23] && dashRows[23][1] !== null) total2026 = Number(dashRows[23][1]);
+
+    // ── PARSE HISTORY ──────────────────────────────────────
+    // History sheet structure (from what we built):
+    // Row 0: title
+    // Row 1: headers (Metric, 2021, 2022 H2, 2023 H1, 2023 H2, 2023 Total, 2024 H1, 2024 H2, 2025 Total)
+    // Row 2: blank section
+    // Row 3: "Total Recognitions" section label
+    // Row 4: Total row with values
+    // We want to build year totals: 2021, 2022(H2 only), 2023 total, 2024 total, 2025 total, 2026 live
+
+    // Find the Total row — scan for row with numeric values
+    const histYears = [];
+    const histVals = [];
+
+    // Known data from our History sheet
+    // Col indices based on headers: 0=Metric, 1=2021, 2=2022 H2, 3=2023 H1, 4=2023 H2, 5=2023 Total, 6=2024 H1, 7=2024 H2, 8=2025 Total
+    // Find total row (look for row where first few numeric cols exist)
+    for (let i = 0; i < histRows.length; i++) {
+      const r = histRows[i];
+      if (!r) continue;
+      // Check if this looks like the total row — has multiple numbers
+      const nums = r.filter(v => v !== null && !isNaN(Number(v)) && Number(v) > 5);
+      if (nums.length >= 3) {
+        // This is our totals row
+        const cols = r;
+        // Map positions to years based on our History structure
+        const mapping = [
+          { label: '2021', idx: 1 },
+          { label: '2022', idx: 2 },  // H2 only
+          { label: '2023', idx: 5 },  // Total col
+          { label: '2024', idx: null }, // compute H1+H2
+          { label: '2025', idx: 8 },
+        ];
+
+        // 2021
+        if (cols[1] && !isNaN(Number(cols[1]))) { histYears.push('2021'); histVals.push(Number(cols[1])); }
+        // 2022 H2 (only half year available)
+        if (cols[2] && !isNaN(Number(cols[2]))) { histYears.push('2022'); histVals.push(Number(cols[2])); }
+        // 2023 total — try col 5 first (2023 Total), else sum H1+H2
+        const t2023 = cols[5] ? Number(cols[5]) : (Number(cols[3]||0) + Number(cols[4]||0));
+        if (t2023 > 0) { histYears.push('2023'); histVals.push(t2023); }
+        // 2024 total = H1 + H2
+        const t2024 = Number(cols[6]||0) + Number(cols[7]||0);
+        if (t2024 > 0) { histYears.push('2024'); histVals.push(t2024); }
+        // 2025
+        if (cols[8] && !isNaN(Number(cols[8]))) { histYears.push('2025'); histVals.push(Number(cols[8])); }
+        break;
+      }
+    }
+
+    // Add 2026 live
+    if (total2026 > 0) { histYears.push('2026 ●'); histVals.push(total2026); }
+
+    // ── RENDER ─────────────────────────────────────────────
+    const maxS = topSenders[0]?.count || 1;
+    const maxR = topReceivers[0]?.count || 1;
+    const maxSD = senderDepts[0]?.count || 1;
+    const maxRD = receiverDepts[0]?.count || 1;
+    const maxB = badges[0]?.count || 1;
+
+    const badgeColors = ['--green', '--blue', '--amber', '--pink', '--purple'];
+    const badgeBgs = [
+      'rgba(0,224,150,.08)', 'rgba(77,158,255,.08)', 'rgba(255,184,77,.08)',
+      'rgba(255,107,157,.08)', 'rgba(167,139,255,.08)'
+    ];
+
+    function personRows(list, maxV, color) {
+      return list.slice(0, 3).map((p, i) => `
+        <div class="pr">
+          <span class="pr-rank" style="color:${i===0?'rgba(255,255,255,.5)':'var(--border2)'}">${i+1}</span>
+          <span class="pr-name">${p.name}</span>
+          <div class="pr-bar-wrap"><div class="pr-bar-bg"><div class="pr-bar-fill" style="width:${Math.round(p.count/maxV*100)}%;background:${color}"></div></div></div>
+          <span class="pr-count" style="color:${color}">${p.count}</span>
+        </div>`).join('');
+    }
+
+    function deptRows(list, maxV, color) {
+      return list.slice(0, 3).map((d, i) => `
+        <div class="dr">
+          <span class="dr-rank">${i+1}</span>
+          <span class="dr-name">${d.name}</span>
+          <div class="dr-bar-wrap"><div class="dr-bar-bg"><div class="dr-bar-fill" style="width:${Math.round(d.count/maxV*100)}%;background:${color}"></div></div></div>
+          <span class="dr-count" style="color:${color}">${d.count}</span>
+        </div>`).join('');
+    }
+
+    document.getElementById('root').innerHTML = `
+
+      <!-- TOTAL HERO -->
+      <div class="total-block">
+        <div class="total-num">${total2026 || topSenders.reduce((s,p)=>s+p.count,0)}</div>
+        <div class="total-info">
+          <div class="total-label">Total recognitions</div>
+          <div class="total-year">2026</div>
+          <div class="total-sub">and counting ↗</div>
+        </div>
+      </div>
+
+      <!-- TOP PEOPLE -->
+      <div class="sec-title">Top people</div>
+      <div class="g2">
+        <div class="card">
+          <div class="card-label">🏆 Top givers</div>
+          ${personRows(topSenders, maxS, 'var(--green)')}
+        </div>
+        <div class="card">
+          <div class="card-label">⭐ Top receivers</div>
+          ${personRows(topReceivers, maxR, 'var(--blue)')}
+        </div>
+      </div>
+
+      <!-- BADGES -->
+      <div class="sec-title">Most popular badges</div>
+      <div class="g3">
+        ${badges.slice(0, 3).map((b, i) => `
+          <div class="badge-big" style="background:${badgeBgs[i]};border-color:rgba(255,255,255,.06)">
+            <div class="badge-num" style="color:var(${badgeColors[i]})">${b.count}</div>
+            <div class="badge-name" style="color:var(${badgeColors[i]})">${b.name}</div>
+            <div class="badge-label">recognitions</div>
+          </div>`).join('')}
+      </div>
+
+      <!-- DEPARTMENTS -->
+      <div class="sec-title">Top departments</div>
+      <div class="g2">
+        <div class="card">
+          <div class="card-label">🏢 Top sender depts</div>
+          ${deptRows(senderDepts, maxSD, 'var(--green)')}
+        </div>
+        <div class="card">
+          <div class="card-label">🏢 Top receiver depts</div>
+          ${deptRows(receiverDepts, maxRD, 'var(--blue)')}
+        </div>
+      </div>
+
+      <!-- HISTORY CHART -->
+      <div class="sec-title">Year over year</div>
+      <div class="chart-card">
+        <div class="chart-title">Total recognitions by year — all time</div>
+        <div class="cw"><canvas id="histChart"></canvas></div>
+      </div>
+
+      <footer>
+        <p><span style="color:var(--green)">●</span> Live · Google Sheets · Zapier → Alconost</p>
+        <p>Recognition Analytics Dashboard</p>
+      </footer>
+    `;
+
+    // ── CHART ──────────────────────────────────────────────
+    setTimeout(() => {
+      const ctx = document.getElementById('histChart');
+      if (!ctx || !histYears.length) return;
+
+      const isLive = histYears.map(y => y.includes('●'));
+      const bgColors = histYears.map((y, i) => y.includes('●') ? 'rgba(0,224,150,.25)' : 'rgba(77,158,255,.15)');
+      const borderColors = histYears.map(y => y.includes('●') ? '#00E096' : '#4D9EFF');
+      const maxVal = Math.max(...histVals);
+
+      chartObj = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: histYears,
+          datasets: [{
+            data: histVals,
+            backgroundColor: bgColors,
+            borderColor: borderColors,
+            borderWidth: 2,
+            borderRadius: 8,
+            borderSkipped: false,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: {
+            duration: 1000,
+            easing: 'easeOutQuart'
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#18181F',
+              borderColor: 'rgba(255,255,255,.12)',
+              borderWidth: 1,
+              titleColor: '#F0EEF8',
+              bodyColor: '#9896A8',
+              padding: 12,
+              callbacks: {
+                label: ctx => `${ctx.parsed.y} recognitions`
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: {
+                color: '#5C5A6E',
+                font: { size: 12, family: 'Inter', weight: '500' }
+              },
+              border: { display: false }
+            },
+            y: {
+              beginAtZero: true,
+              grid: { color: 'rgba(255,255,255,.04)', drawBorder: false },
+              ticks: {
+                color: '#5C5A6E',
+                font: { size: 11, family: 'Inter' },
+                stepSize: 50
+              },
+              border: { display: false }
+            }
+          }
+        }
+      });
+
+      // Animate bars with stagger
+      const meta = chartObj.getDatasetMeta(0);
+      meta.data.forEach((bar, i) => {
+        bar.options.backgroundColor = bgColors[i];
+      });
+
+    }, 100);
+
+    document.getElementById('uptime').textContent = `updated ${new Date().toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'})}`;
+
+  } catch(e) {
+    document.getElementById('root').innerHTML = `<div class="err">⚠ ${e.message}<br><br>Make sure the spreadsheet is shared: <strong>File → Share → Anyone with the link → Viewer</strong></div>`;
+    document.getElementById('uptime').textContent = 'error';
+  }
+}
+
+loadAll();
+</script>
+</body>
+</html>
