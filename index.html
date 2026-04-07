@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recognition Dashboard · Alconost</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#020509;--bg2:rgba(6,12,22,0.80);--bg4:#141e30;
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.14);
+  --text:#F0EEF8;--text2:#9896A8;--text3:#5C5A6E;
+  --green:#00E096;--blue:#4D9EFF;--amber:#FFB84D;
+}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;overflow-x:hidden}
+
+#bg-canvas{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+.snow-ground{position:fixed;bottom:0;left:0;right:0;z-index:4;pointer-events:none}
+
+@keyframes bear-breathe{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-3px)}}
+
+@keyframes bubble-pop{from{opacity:0;transform:scale(.6) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+
+.wrap{position:relative;z-index:3;max-width:1080px;margin:0 auto;padding:3rem 1.5rem 2rem}
+
+.hero{margin-bottom:3rem;animation:fu .7s ease both}
+.hero-eyebrow{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--green);margin-bottom:.75rem}
+.hero-title{font-family:'Syne',sans-serif;font-size:clamp(2.8rem,7vw,5.5rem);font-weight:800;line-height:.95;letter-spacing:-.025em}
+.hero-title .dim{color:var(--text3)}
+
+
+.total-block{display:flex;align-items:flex-end;gap:1.5rem;margin-bottom:3rem;padding:2rem 2.5rem;background:var(--bg2);border:1px solid var(--border);border-radius:20px;position:relative;overflow:hidden;backdrop-filter:blur(20px);animation:fu .7s ease both .1s}
+.total-block::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;background:radial-gradient(circle,rgba(0,224,150,.08),transparent 70%);border-radius:50%}
+.total-num{font-family:'Syne',sans-serif;font-size:clamp(4rem,12vw,8rem);font-weight:800;line-height:1;color:var(--green);animation:glow 4s ease-in-out infinite}
+@keyframes glow{0%,100%{text-shadow:0 0 30px rgba(0,224,150,.25)}50%{text-shadow:0 0 55px rgba(0,224,150,.55)}}
+.total-label{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:.4rem}
+.total-year{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;color:var(--text2)}
+.total-sub{font-size:12px;color:var(--text3);margin-top:.25rem}
+
+.sec-title{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);margin-bottom:1rem;display:flex;align-items:center;gap:.6rem}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:2rem}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:2rem}
+@media(max-width:640px){.g3,.g2{grid-template-columns:1fr}}
+
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1.25rem 1.5rem;backdrop-filter:blur(14px);transition:border-color .3s,transform .3s}
+.card:hover{border-color:var(--border2);transform:translateY(-2px)}
+.card-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:1rem}
+
+.pr{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--border)}
+.pr:last-child{border:none}
+.pr-rank{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:rgba(255,255,255,.14);width:24px;flex-shrink:0;line-height:1}
+.pr-rank.top{color:rgba(255,255,255,.38)}
+.pr-name{font-size:14px;font-weight:500;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pr-bar-wrap{width:56px;flex-shrink:0}
+.pr-bar-bg{height:3px;background:var(--bg4);border-radius:2px;overflow:hidden}
+.pr-bar-fill{height:3px;border-radius:2px;width:0;transition:width 1.2s cubic-bezier(.16,1,.3,1)}
+.pr-count{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;width:28px;text-align:right;flex-shrink:0}
+
+.badge-big{text-align:center;padding:1.5rem 1rem;border-radius:14px;border:1px solid var(--border);background:var(--bg2);backdrop-filter:blur(14px);transition:transform .3s,border-color .3s}
+.badge-big:hover{transform:translateY(-4px);border-color:var(--border2)}
+.badge-num{font-family:'Syne',sans-serif;font-size:2.8rem;font-weight:800;line-height:1;margin-bottom:.3rem}
+.badge-name{font-size:13px;font-weight:600;margin-bottom:.2rem}
+.badge-label{font-size:10px;color:var(--text3);font-weight:500;letter-spacing:.06em;text-transform:uppercase}
+
+.dr{display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid var(--border)}
+.dr:last-child{border:none}
+.dr-rank{font-size:10px;font-weight:700;color:var(--text3);width:14px;text-align:right;flex-shrink:0}
+.dr-name{font-size:13px;font-weight:500;flex:1}
+.dr-bar-wrap{width:60px;flex-shrink:0}
+.dr-bar-bg{height:4px;background:var(--bg4);border-radius:2px;overflow:hidden}
+.dr-bar-fill{height:4px;border-radius:2px;width:0;transition:width 1.2s cubic-bezier(.16,1,.3,1)}
+.dr-count{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;width:28px;text-align:right;flex-shrink:0}
+
+.chart-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1.5rem;margin-bottom:2rem;backdrop-filter:blur(14px)}
+.chart-title{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:1.5rem}
+.cw{position:relative;width:100%;height:300px;display:block}
+
+@keyframes fu{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+.fu{animation:fu .6s ease both}
+.loading{text-align:center;padding:5rem 0;color:var(--text3)}
+.spin{width:28px;height:28px;border:2px solid var(--bg4);border-top-color:var(--green);border-radius:50%;animation:rot 1s linear infinite;margin:0 auto 1rem}
+@keyframes rot{to{transform:rotate(360deg)}}
+.err{background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.2);border-radius:10px;padding:1.25rem;color:#FF6B6B;font-size:13px;line-height:1.7;margin:1rem 0}
+.bear-img{width:220px;height:auto;display:block;mix-blend-mode:screen;filter:drop-shadow(0 0 20px rgba(0,200,150,.15))}
+</style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+
+<svg class="snow-ground" viewBox="0 0 1440 130" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M0,130 L0,72 Q90,44 185,65 Q280,84 380,52 Q475,22 580,58 Q680,88 780,48 Q880,14 985,54 Q1085,86 1190,50 Q1310,18 1440,60 L1440,130 Z" fill="rgba(160,200,235,0.07)"/>
+  <path d="M0,130 L0,92 Q105,68 215,82 Q325,96 435,74 Q545,54 655,78 Q765,98 875,76 Q985,56 1095,80 Q1215,98 1335,78 L1440,82 L1440,130 Z" fill="rgba(200,225,250,0.12)"/>
+  <path d="M0,130 L0,110 Q115,96 230,106 Q345,116 460,100 Q575,86 690,104 Q805,118 920,102 Q1035,88 1150,106 Q1295,120 1440,104 L1440,130 Z" fill="rgba(225,240,255,0.17)"/>
+</svg>
+
+
+<div class="wrap">
+  <div class="hero">
+    <div class="hero-eyebrow">People & Culture · Alconost</div>
+    <div class="hero-title">Recognition<br><span class="dim">Analytics</span></div>
+    
+  </div>
+
+  <div id="root"><div class="loading"><div class="spin"></div>Loading data...</div></div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H;
+
+  /* ── resize ── */
+  function resize(){
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resize);
+
+  /* ══════════════════════════════════════
+     STARS
+  ══════════════════════════════════════ */
+  const stars = [];
+  function buildStars(){
+    stars.length = 0;
+    for(let i = 0; i < 320; i++){
+      const sz = Math.random();
+      stars.push({
+        x: Math.random(),
+        y: Math.random() * 0.80,
+        r: sz < .60 ? .3 : sz < .86 ? .65 : 1.1,
+        phase: Math.random() * Math.PI * 2,
+        speed: .0008 + Math.random() * .003,
+        col: Math.random() < .07 ? '#c8daff' : Math.random() < .05 ? '#ffeebb' : '#ffffff'
+      });
+    }
+  }
+
+  /* ══════════════════════════════════════
+     AURORA — single diagonal band like real
+     northern lights: one main sweep across
+     sky, 2-3 layered ribbons, slow shimmer
+  ══════════════════════════════════════ */
+  // Aurora is drawn directly in draw() — no pre-build needed
+
+  /* ══════════════════════════════════════
+     SHOOTING STARS state
+  ══════════════════════════════════════ */
+  const meteors = [];
+  let nextMeteor = 4000 + Math.random() * 8000;
+
+  function spawnMeteor(now){
+    const angle = (12 + Math.random() * 25) * Math.PI / 180;
+    const len = 120 + Math.random() * 200;
+    meteors.push({
+      sx: Math.random() * W * 0.85,
+      sy: Math.random() * H * 0.38,
+      dx: Math.cos(angle) * len,
+      dy: Math.sin(angle) * len,
+      start: now,
+      dur: 500 + Math.random() * 400,
+      w: 1.2 + Math.random() * 1.2
+    });
+    nextMeteor = now + 5000 + Math.random() * 12000;
+  }
+
+  /* ══════════════════════════════════════
+     MAIN RENDER LOOP
+  ══════════════════════════════════════ */
+  /* Draw a single sweeping aurora band like in the reference photo:
+     two main ribbons running diagonally across sky, slow shimmer */
+  function drawAurora(ctx, W, H, now) {
+    // Main band: runs from ~(5%, 55%) to ~(95%, 18%) — diagonal sweep
+    // We draw 3 layered ribbon passes for depth
+    const ribbons = [
+      // [startX%, startY%, endX%, endY%, width, r,g,b, maxAlpha, cycleMs, phaseOffset]
+      [0.00, 0.52, 1.00, 0.18,  H*0.12,  0,220,140,  0.13, 24000, 0],
+      [0.00, 0.56, 1.00, 0.22,  H*0.07,  0,200,160,  0.09, 20000, 3000],
+      [0.00, 0.48, 1.00, 0.14,  H*0.05,  40,240,180, 0.06, 28000, 8000],
+      // secondary fainter band slightly offset
+      [0.05, 0.62, 0.95, 0.28,  H*0.06,  0,180,120,  0.05, 18000, 5000],
+      // top edge brightening
+      [0.10, 0.42, 0.90, 0.10,  H*0.04,  80,255,200, 0.04, 22000, 12000],
+    ];
+
+    ribbons.forEach(([sx,sy,ex,ey,bw,r,g,b,maxA,cycle,ph]) => {
+      const alpha = maxA * (0.45 + 0.55 * (0.5 + 0.5 * Math.sin((now + ph) / cycle * Math.PI * 2)));
+
+      const x0 = sx * W, y0 = sy * H;
+      const x1 = ex * W, y1 = ey * H;
+
+      // perpendicular direction for ribbon width
+      const dx = x1 - x0, dy = y1 - y0;
+      const len = Math.sqrt(dx*dx + dy*dy);
+      const nx = -dy / len, ny = dx / len; // normal
+
+      // Build ribbon as a gradient-filled quad
+      ctx.save();
+
+      // Gradient perpendicular to the ribbon (cross-section)
+      const mx = (x0+x1)/2, my = (y0+y1)/2;
+      const gx0 = mx + nx * bw, gy0 = my + ny * bw;
+      const gx1 = mx - nx * bw, gy1 = my - ny * bw;
+      const grad = ctx.createLinearGradient(gx0, gy0, gx1, gy1);
+      grad.addColorStop(0,    `rgba(${r},${g},${b},0)`);
+      grad.addColorStop(0.2,  `rgba(${r},${g},${b},${alpha * 0.4})`);
+      grad.addColorStop(0.5,  `rgba(${r},${g},${b},${alpha})`);
+      grad.addColorStop(0.8,  `rgba(${r},${g},${b},${alpha * 0.3})`);
+      grad.addColorStop(1,    `rgba(${r},${g},${b},0)`);
+
+      // Fade along the ribbon length (left→right)
+      // Draw as a polygon
+      const steps = 40;
+      ctx.beginPath();
+      // top edge
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const fade = Math.sin(t * Math.PI); // fade in/out along length
+        const w = bw * fade;
+        const px = x0 + dx * t + nx * w;
+        const py = y0 + dy * t + ny * w;
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+      }
+      // bottom edge reversed
+      for (let i = steps; i >= 0; i--) {
+        const t = i / steps;
+        const fade = Math.sin(t * Math.PI);
+        const w = bw * fade;
+        const px = x0 + dx * t - nx * w;
+        const py = y0 + dy * t - ny * w;
+        ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.fillStyle = grad;
+      ctx.fill();
+      ctx.restore();
+    });
+  }
+
+  function draw(now){
+    ctx.clearRect(0, 0, W, H);
+
+    /* — deep sky gradient — */
+    const sky = ctx.createLinearGradient(0, 0, 0, H);
+    sky.addColorStop(0,   '#010407');
+    sky.addColorStop(0.45,'#020810');
+    sky.addColorStop(0.80,'#030c16');
+    sky.addColorStop(1,   '#050e1a');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, W, H);
+
+    /* — aurora: single diagonal band — */
+    drawAurora(ctx, W, H, now);
+
+    /* — stars — */
+    stars.forEach(s => {
+      const a = 0.18 + 0.75 * (0.5 + 0.5 * Math.sin(s.phase + now * s.speed));
+      ctx.beginPath();
+      ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = s.col;
+      ctx.globalAlpha = Math.min(a, 0.92);
+      ctx.fill();
+      if(s.r > 0.9){
+        ctx.beginPath();
+        ctx.arc(s.x * W, s.y * H, s.r * 2.8, 0, Math.PI * 2);
+        ctx.globalAlpha = a * 0.06;
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    });
+
+    /* — shooting stars — */
+    if(now >= nextMeteor) spawnMeteor(now);
+    for(let i = meteors.length - 1; i >= 0; i--){
+      const m = meteors[i];
+      const progress = (now - m.start) / m.dur;
+      if(progress >= 1){ meteors.splice(i, 1); continue; }
+
+      // ease out
+      const ease = 1 - Math.pow(1 - progress, 2);
+      const x = m.sx + m.dx * ease;
+      const y = m.sy + m.dy * ease;
+
+      // head alpha: bright at start, fades
+      const headA = Math.max(0, 1 - progress * 1.3);
+      // tail: line from start to current pos
+      const tailLen = Math.min(1, progress * 3);
+      const tx = m.sx + m.dx * Math.max(0, ease - tailLen * 0.25);
+      const ty = m.sy + m.dy * Math.max(0, ease - tailLen * 0.25);
+
+      const tail = ctx.createLinearGradient(tx, ty, x, y);
+      tail.addColorStop(0, 'rgba(255,255,255,0)');
+      tail.addColorStop(1, `rgba(255,255,255,${headA * 0.85})`);
+
+      ctx.beginPath();
+      ctx.moveTo(tx, ty);
+      ctx.lineTo(x, y);
+      ctx.strokeStyle = tail;
+      ctx.lineWidth = m.w;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+
+      // bright head dot
+      ctx.beginPath();
+      ctx.arc(x, y, m.w * 1.4, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,255,255,${headA})`;
+      ctx.fill();
+      // glow
+      ctx.beginPath();
+      ctx.arc(x, y, m.w * 4, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(200,220,255,${headA * 0.25})`;
+      ctx.fill();
+    }
+
+    requestAnimationFrame(draw);
+  }
+
+  buildStars();
+  resize();
+  requestAnimationFrame(draw);
+})();
+
+const SID = '1eJIHvgf-S96vwRLJYw4DNyVsuvWUX4RQjTUzpo3u3rk';
+const DASHBOARD_GID = '420087771';
+
+function parseCSV(text){
+  return text.split('\n').map(line=>{
+    const cells=[]; let cur='',inQ=false;
+    for(let i=0;i<line.length;i++){
+      const ch=line[i];
+      if(ch==='"'){inQ=!inQ;}
+      else if(ch===','&&!inQ){cells.push(cur.trim());cur='';}
+      else{cur+=ch;}
+    }
+    cells.push(cur.trim());
+    return cells.map(c=>{
+      const s=c.replace(/^"|"$/g,'').trim();
+      if(!s)return null;
+      const n=Number(s.replace(/,/g,''));
+      return !isNaN(n)&&s!==''?n:s;
+    });
+  }).filter(r=>r.some(c=>c!==null));
+}
+
+function animateBars(){
+  document.querySelectorAll('.pr-bar-fill[data-w], .dr-bar-fill[data-w]').forEach(el=>{
+    setTimeout(()=>{ el.style.width = el.dataset.w; }, 100);
+  });
+}
+
+function personRows(list, maxV, color){
+  const rankClass=['top','',''];
+  return list.slice(0,3).map((p,i)=>`
+    <div class="pr">
+      <span class="pr-rank ${rankClass[i]}">${i+1}</span>
+      <span class="pr-name">${p.name}</span>
+      <div class="pr-bar-wrap"><div class="pr-bar-bg"><div class="pr-bar-fill" data-w="${Math.round(p.count/maxV*100)}%" style="background:${color}"></div></div></div>
+      <span class="pr-count" style="color:${color}">${p.count}</span>
+    </div>`).join('');
+}
+
+function deptRows(list, maxV, color){
+  return list.slice(0,3).map((d,i)=>`
+    <div class="dr">
+      <span class="dr-rank">${i+1}</span>
+      <span class="dr-name">${d.name}</span>
+      <div class="dr-bar-wrap"><div class="dr-bar-bg"><div class="dr-bar-fill" data-w="${Math.round(d.count/maxV*100)}%" style="background:${color}"></div></div></div>
+      <span class="dr-count" style="color:${color}">${d.count}</span>
+    </div>`).join('');
+}
+
+function renderConstellationChart(histVals){
+  const histYears = ['2021','2022','2023','2024','2025','2026 ●'];
+  const canvas = document.getElementById('histChart');
+  if(!canvas) return;
+  const isLive = histVals.map((_,i) => i === histVals.length - 1);
+  const dpr = window.devicePixelRatio || 1;
+  const container = canvas.parentElement;
+  let cometPhase = 0;
+  let animFrame = null;
+
+  function render(){
+    const W = container.clientWidth;
+    const H = 300;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+
+    const pad = { top: 28, bottom: 48, left: 32, right: 32 };
+    const cw = W - pad.left - pad.right;
+    const ch = H - pad.top - pad.bottom;
+    const maxVal = Math.max(...histVals);
+
+    const pts = histVals.map((v,i) => ({
+      x: pad.left + (i/(histVals.length-1))*cw,
+      y: pad.top + ch - (v/maxVal)*ch,
+      v, live: isLive[i]
+    }));
+
+    ctx.clearRect(0, 0, W, H);
+
+    // bg stars
+    const rng = (seed) => { let x = Math.sin(seed+1)*10000; return x-Math.floor(x); };
+    for(let i=0;i<55;i++){
+      const bx = pad.left + rng(i*3)*cw;
+      const by = pad.top + rng(i*3+1)*ch;
+      const br = rng(i*3+2) < .7 ? .25 : .5;
+      ctx.beginPath(); ctx.arc(bx,by,br,0,Math.PI*2);
+      ctx.fillStyle=`rgba(255,255,255,${0.08+rng(i*3+2)*0.14})`;
+      ctx.fill();
+    }
+
+    // white gradient fill
+    const fillGrad = ctx.createLinearGradient(0,pad.top,0,pad.top+ch);
+    fillGrad.addColorStop(0,'rgba(255,255,255,0.10)');
+    fillGrad.addColorStop(0.4,'rgba(255,255,255,0.05)');
+    fillGrad.addColorStop(1,'rgba(255,255,255,0.00)');
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pad.top+ch);
+    pts.forEach(p=>ctx.lineTo(p.x,p.y));
+    ctx.lineTo(pts[pts.length-1].x, pad.top+ch);
+    ctx.closePath();
+    ctx.fillStyle=fillGrad; ctx.fill();
+
+    // connecting lines
+    for(let i=0;i<pts.length-1;i++){
+      const a=pts[i], b=pts[i+1];
+      ctx.save();
+      ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y);
+      if(b.live){
+        ctx.setLineDash([4,6]);
+        ctx.strokeStyle='rgba(255,150,40,.38)';
+        ctx.lineWidth=1;
+      } else {
+        ctx.setLineDash([]);
+        ctx.strokeStyle='rgba(180,210,255,.18)';
+        ctx.lineWidth=1;
+      }
+      ctx.stroke();
+      if(!b.live){
+        ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y);
+        ctx.setLineDash([]);
+        ctx.strokeStyle='rgba(140,185,255,.07)';
+        ctx.lineWidth=4; ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    const peakIdx = histVals.indexOf(maxVal);
+
+    // star dots (non-comet)
+    pts.forEach((p,i)=>{
+      if(p.live) return; // comet handles this
+      const big = i===peakIdx;
+      const glowR = big?18:12;
+      const glow = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,glowR);
+      glow.addColorStop(0,big?'rgba(220,240,255,.22)':'rgba(200,220,255,.12)');
+      glow.addColorStop(1,'rgba(200,220,255,0)');
+      ctx.beginPath(); ctx.arc(p.x,p.y,glowR,0,Math.PI*2);
+      ctx.fillStyle=glow; ctx.fill();
+      if(big){
+        [[1,0],[0,1],[.7,.7],[-.7,.7]].forEach(([fx,fy])=>{
+          const fl=ctx.createLinearGradient(p.x-fx*14,p.y-fy*14,p.x+fx*14,p.y+fy*14);
+          fl.addColorStop(0,'rgba(255,255,255,0)');
+          fl.addColorStop(.5,'rgba(255,255,255,.25)');
+          fl.addColorStop(1,'rgba(255,255,255,0)');
+          ctx.beginPath(); ctx.moveTo(p.x-fx*14,p.y-fy*14); ctx.lineTo(p.x+fx*14,p.y+fy*14);
+          ctx.strokeStyle=fl; ctx.lineWidth=1; ctx.stroke();
+        });
+      }
+      ctx.beginPath(); ctx.arc(p.x,p.y,big?5:3.5,0,Math.PI*2);
+      ctx.fillStyle='#ffffff'; ctx.fill();
+      ctx.beginPath(); ctx.arc(p.x-1,p.y-1,big?1.8:1.2,0,Math.PI*2);
+      ctx.fillStyle='rgba(255,255,255,.7)'; ctx.fill();
+    });
+
+    // x labels
+    ctx.textAlign='center';
+    histYears.forEach((lbl,i)=>{
+      const x = pad.left + (i/(histYears.length-1))*cw;
+      ctx.fillStyle = isLive[i] ? 'rgba(255,150,40,.8)' : '#5C5A6E';
+      ctx.font='500 11px Inter, sans-serif';
+      ctx.fillText(lbl, x, H-10);
+    });
+
+    // y ticks
+    ctx.textAlign='right';
+    [0,100,200].forEach(v=>{
+      const y=pad.top+ch-(v/maxVal)*ch;
+      ctx.beginPath(); ctx.moveTo(pad.left-4,y); ctx.lineTo(pad.left+cw,y);
+      ctx.strokeStyle='rgba(255,255,255,.04)'; ctx.lineWidth=1; ctx.setLineDash([]); ctx.stroke();
+      ctx.fillStyle='#3a3a50'; ctx.font='10px Inter,sans-serif';
+      ctx.fillText(v, pad.left-8, y+4);
+    });
+
+    // "in progress" label
+    const lp = pts[pts.length-1];
+    ctx.save();
+    ctx.font='500 10px Inter,sans-serif';
+    ctx.fillStyle='rgba(255,150,40,.8)';
+    ctx.textAlign='center';
+    ctx.fillText('in progress', lp.x, lp.y-14);
+    ctx.restore();
+  }
+
+  function drawComet(){
+    const W = container.clientWidth;
+    const H = 300;
+    const pad = { top: 28, bottom: 48, left: 32, right: 32 };
+    const cw = W - pad.left - pad.right;
+    const ch = H - pad.top - pad.bottom;
+    const maxVal = Math.max(...histVals);
+    const pts = histVals.map((v,i) => ({
+      x: pad.left + (i/(histVals.length-1))*cw,
+      y: pad.top + ch - (v/maxVal)*ch
+    }));
+    const lp = pts[pts.length-1];
+    const prev = pts[pts.length-2];
+
+    const ctx2 = canvas.getContext('2d');
+    const tailLen = (36 + 10*Math.sin(cometPhase*0.8)) * dpr;
+    const angle = Math.atan2(lp.y - prev.y, lp.x - prev.x);
+    const drift = 4 * Math.sin(cometPhase*1.2);
+    const cx = lp.x * dpr + Math.cos(angle)*drift*dpr;
+    const cy = lp.y * dpr + Math.sin(angle)*drift*dpr;
+    const tailAngle = angle + Math.PI;
+    const tx = cx + Math.cos(tailAngle)*tailLen;
+    const ty = cy + Math.sin(tailAngle)*tailLen;
+    const perp = tailAngle + Math.PI/2;
+    const spread = (2.5 + 1.5*Math.sin(cometPhase)) * dpr;
+
+    ctx2.save();
+    const tailGrad = ctx2.createLinearGradient(cx,cy,tx,ty);
+    tailGrad.addColorStop(0,'rgba(255,150,40,0.85)');
+    tailGrad.addColorStop(0.35,'rgba(255,180,80,0.45)');
+    tailGrad.addColorStop(0.7,'rgba(255,200,100,0.18)');
+    tailGrad.addColorStop(1,'rgba(255,200,100,0)');
+    ctx2.beginPath();
+    ctx2.moveTo(cx,cy);
+    ctx2.lineTo(tx+Math.cos(perp)*spread, ty+Math.sin(perp)*spread);
+    ctx2.lineTo(tx-Math.cos(perp)*spread, ty-Math.sin(perp)*spread);
+    ctx2.closePath();
+    ctx2.fillStyle=tailGrad; ctx2.fill();
+
+    const glowR = (9+3*Math.sin(cometPhase*1.5))*dpr;
+    const glow = ctx2.createRadialGradient(cx,cy,0,cx,cy,glowR);
+    glow.addColorStop(0,'rgba(255,180,60,0.5)');
+    glow.addColorStop(0.5,'rgba(255,150,40,0.2)');
+    glow.addColorStop(1,'rgba(255,150,40,0)');
+    ctx2.beginPath(); ctx2.arc(cx,cy,glowR,0,Math.PI*2);
+    ctx2.fillStyle=glow; ctx2.fill();
+
+    ctx2.beginPath(); ctx2.arc(cx,cy,4.5*dpr,0,Math.PI*2);
+    ctx2.fillStyle='#FF9628'; ctx2.fill();
+    ctx2.beginPath(); ctx2.arc(cx-dpr,cy-dpr,2*dpr,0,Math.PI*2);
+    ctx2.fillStyle='rgba(255,230,180,0.9)'; ctx2.fill();
+    ctx2.restore();
+
+    cometPhase += 0.07;
+    animFrame = requestAnimationFrame(drawComet);
+  }
+
+  render();
+  if(animFrame) cancelAnimationFrame(animFrame);
+  drawComet();
+
+  window.addEventListener('resize', ()=>{ render(); });
+}
+
+async function loadAll(){
+  document.getElementById('root').innerHTML='<div class="loading"><div class="spin"></div>Loading data...</div>';
+
+  try{
+    const url=`https://docs.google.com/spreadsheets/d/${SID}/export?format=csv&gid=${DASHBOARD_GID}`;
+    const res=await fetch(url);
+    if(!res.ok) throw new Error('Cannot load sheet (HTTP '+res.status+'). Make sure the spreadsheet is shared.');
+    const csv=await res.text();
+    const rows=parseCSV(csv);
+
+    const get=(r,c)=>(rows[r]&&rows[r][c]!=null)?rows[r][c]:null;
+    const topSenders   =[2,3,4,5,6].map(i=>({name:get(i,0),count:get(i,1)})).filter(x=>x.name&&x.count>0);
+    const topReceivers =[2,3,4,5,6].map(i=>({name:get(i,4),count:get(i,5)})).filter(x=>x.name&&x.count>0);
+    const senderDepts  =[9,10,11].map(i=>({name:get(i,0),count:get(i,1)})).filter(x=>x.name&&x.count>0);
+    const receiverDepts=[9,10,11].map(i=>({name:get(i,4),count:get(i,5)})).filter(x=>x.name&&x.count>0);
+    const badges       =[14,15,16].map(i=>({name:get(i,0),count:get(i,1)})).filter(x=>x.name&&x.count>0);
+    const total2026    =Number(get(17,1))||0;
+
+    const histVals=[68,114,216,206,207,total2026];
+    const maxS =topSenders[0]?.count||1;
+    const maxR =topReceivers[0]?.count||1;
+    const maxSD=senderDepts[0]?.count||1;
+    const maxRD=receiverDepts[0]?.count||1;
+
+    const badgeColors=['var(--green)','var(--blue)','var(--amber)'];
+    const badgeBgs=['rgba(0,224,150,.07)','rgba(77,158,255,.07)','rgba(255,184,77,.07)'];
+
+    document.getElementById('root').innerHTML=`
+      <div class="total-block">
+        <div class="total-num">${total2026}</div>
+        <div class="total-info">
+          <div class="total-label">Total recognitions</div>
+          <div class="total-year">2026</div>
+          <div class="total-sub">and counting ↗</div>
+        </div>
+      </div>
+      <div class="sec-title fu" style="animation-delay:.15s">Top people</div>
+      <div class="g2">
+        <div class="card fu" style="animation-delay:.2s">
+          <div class="card-label">🏆 Top givers</div>
+          ${personRows(topSenders,maxS,'var(--green)')}
+        </div>
+        <div class="card fu" style="animation-delay:.25s">
+          <div class="card-label">⭐ Top receivers</div>
+          ${personRows(topReceivers,maxR,'var(--blue)')}
+        </div>
+      </div>
+      <div class="sec-title fu" style="animation-delay:.3s">Most popular badges</div>
+      <div class="g3">
+        ${badges.slice(0,3).map((b,i)=>`
+          <div class="badge-big fu" style="animation-delay:${.35+i*.06}s;background:${badgeBgs[i]}">
+            <div class="badge-num" style="color:${badgeColors[i]};text-shadow:0 0 20px ${badgeColors[i]}44">${b.count}</div>
+            <div class="badge-name" style="color:${badgeColors[i]}">${b.name}</div>
+            <div class="badge-label">recognitions</div>
+          </div>`).join('')}
+      </div>
+      <div class="sec-title fu" style="animation-delay:.5s">Top departments</div>
+      <div class="g2">
+        <div class="card fu" style="animation-delay:.55s">
+          <div class="card-label">🏢 Top sender depts</div>
+          ${deptRows(senderDepts,maxSD,'var(--green)')}
+        </div>
+        <div class="card fu" style="animation-delay:.6s">
+          <div class="card-label">🏢 Top receiver depts</div>
+          ${deptRows(receiverDepts,maxRD,'var(--blue)')}
+        </div>
+      </div>
+      <div class="sec-title fu" style="animation-delay:.65s">Year over year</div>
+      <div class="chart-card fu" style="animation-delay:.7s">
+        <div class="chart-title">Total recognitions by year — all time</div>
+        <div class="cw"><canvas id="histChart"></canvas></div>
+      </div>
+    `;
+
+    animateBars();
+    setTimeout(()=>renderConstellationChart(histVals), 200);
+
+  }catch(e){
+    document.getElementById('root').innerHTML=`<div class="err">⚠ ${e.message}<br><br>Make sure the spreadsheet is shared: <strong>File → Share → Anyone with the link → Viewer</strong></div>`;
+  }
+}
+
+loadAll();
+</script>
+
+</div>
+</body>
+</html>
