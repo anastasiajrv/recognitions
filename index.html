@@ -87,6 +87,9 @@ html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:'In
 @keyframes rot{to{transform:rotate(360deg)}}
 .err{background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.2);border-radius:10px;padding:1.25rem;color:#FF6B6B;font-size:13px;line-height:1.7;margin:1rem 0}
 .bear-img{width:220px;height:auto;display:block;mix-blend-mode:screen;filter:drop-shadow(0 0 20px rgba(0,200,150,.15))}
+
+/* подпись типа метрики для блока отделов */
+.dept-metric-label{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);margin-bottom:.75rem;padding:0 .1rem;opacity:.85}
 </style>
 </head>
 <body>
@@ -363,6 +366,7 @@ function personRows(list, maxV, color){
     </div>`).join('');
 }
 
+/* Отделы: абсолютные числа */
 function deptRows(list, maxV, color){
   return list.slice(0,3).map((d,i)=>`
     <div class="dr">
@@ -370,6 +374,17 @@ function deptRows(list, maxV, color){
       <span class="dr-name">${d.name}</span>
       <div class="dr-bar-wrap"><div class="dr-bar-bg"><div class="dr-bar-fill" data-w="${Math.round(d.count/maxV*100)}%" style="background:${color}"></div></div></div>
       <span class="dr-count" style="color:${color}">${d.count}</span>
+    </div>`).join('');
+}
+
+/* Отделы: относительные (rate per person) — одна цифра после запятой */
+function deptRateRows(list, maxV, color){
+  return list.slice(0,3).map((d,i)=>`
+    <div class="dr">
+      <span class="dr-rank">${i+1}</span>
+      <span class="dr-name">${d.name}</span>
+      <div class="dr-bar-wrap"><div class="dr-bar-bg"><div class="dr-bar-fill" data-w="${Math.round(d.count/maxV*100)}%" style="background:${color}"></div></div></div>
+      <span class="dr-count" style="color:${color}">${typeof d.count==='number'?d.count.toFixed(1):d.count}</span>
     </div>`).join('');
 }
 
@@ -642,18 +657,32 @@ async function loadAll(){
     const rows=parseCSV(csv);
 
     const get=(r,c)=>(rows[r]&&rows[r][c]!=null)?rows[r][c]:null;
+
+    // Топ людей (строки 2–6)
     const topSenders   =[2,3,4,5,6].map(i=>({name:get(i,0),count:get(i,1)})).filter(x=>x.name&&x.count>0);
     const topReceivers =[2,3,4,5,6].map(i=>({name:get(i,4),count:get(i,5)})).filter(x=>x.name&&x.count>0);
-    const senderDepts  =[9,10,11].map(i=>({name:get(i,0),count:get(i,1)})).filter(x=>x.name&&x.count>0);
-    const receiverDepts=[9,10,11].map(i=>({name:get(i,4),count:get(i,5)})).filter(x=>x.name&&x.count>0);
+
+    // Отделы: относительные (rate/person) — строки 9–11
+    const senderDeptsRate  =[9,10,11].map(i=>({name:get(i,0),count:get(i,1)})).filter(x=>x.name&&x.count>0);
+    const receiverDeptsRate=[9,10,11].map(i=>({name:get(i,4),count:get(i,5)})).filter(x=>x.name&&x.count>0);
+
+    // Значки (строки 14–16)
     const badges       =[14,15,16].map(i=>({name:get(i,0),count:get(i,1)})).filter(x=>x.name&&x.count>0);
+
+    // Итого 2026 (строка 17)
     const total2026    =Number(get(17,1))||0;
 
+    // Отделы: абсолютные числа — строки 20–22
+    const senderDeptsTotal  =[20,21,22].map(i=>({name:get(i,0),count:get(i,1)})).filter(x=>x.name&&x.count>0);
+    const receiverDeptsTotal=[20,21,22].map(i=>({name:get(i,4),count:get(i,5)})).filter(x=>x.name&&x.count>0);
+
     const histVals=[68,114,216,206,207,total2026];
-    const maxS =topSenders[0]?.count||1;
-    const maxR =topReceivers[0]?.count||1;
-    const maxSD=senderDepts[0]?.count||1;
-    const maxRD=receiverDepts[0]?.count||1;
+    const maxS  = topSenders[0]?.count||1;
+    const maxR  = topReceivers[0]?.count||1;
+    const maxSR = senderDeptsRate[0]?.count||1;
+    const maxRR = receiverDeptsRate[0]?.count||1;
+    const maxST = senderDeptsTotal[0]?.count||1;
+    const maxRT = receiverDeptsTotal[0]?.count||1;
 
     const badgeColors=['var(--green)','var(--blue)','var(--amber)'];
     const badgeBgs=['rgba(0,224,150,.07)','rgba(77,158,255,.07)','rgba(255,184,77,.07)'];
@@ -688,18 +717,33 @@ async function loadAll(){
           </div>`).join('')}
       </div>
       <div class="sec-title fu" style="animation-delay:.5s">Top departments</div>
+
+      <div class="dept-metric-label fu" style="animation-delay:.52s">By rate per person — recognitions ÷ headcount</div>
       <div class="g2">
         <div class="card fu" style="animation-delay:.55s">
           <div class="card-label">🏢 Top sender depts</div>
-          ${deptRows(senderDepts,maxSD,'var(--green)')}
+          ${deptRateRows(senderDeptsRate,maxSR,'var(--green)')}
         </div>
-        <div class="card fu" style="animation-delay:.6s">
+        <div class="card fu" style="animation-delay:.58s">
           <div class="card-label">🏢 Top receiver depts</div>
-          ${deptRows(receiverDepts,maxRD,'var(--blue)')}
+          ${deptRateRows(receiverDeptsRate,maxRR,'var(--blue)')}
         </div>
       </div>
-      <div class="sec-title fu" style="animation-delay:.65s">Year over year</div>
-      <div class="chart-card fu" style="animation-delay:.7s">
+
+      <div class="dept-metric-label fu" style="animation-delay:.60s">By total recognitions — absolute count</div>
+      <div class="g2">
+        <div class="card fu" style="animation-delay:.63s">
+          <div class="card-label">🏢 Top sender depts</div>
+          ${deptRows(senderDeptsTotal,maxST,'var(--green)')}
+        </div>
+        <div class="card fu" style="animation-delay:.66s">
+          <div class="card-label">🏢 Top receiver depts</div>
+          ${deptRows(receiverDeptsTotal,maxRT,'var(--blue)')}
+        </div>
+      </div>
+
+      <div class="sec-title fu" style="animation-delay:.7s">Year over year</div>
+      <div class="chart-card fu" style="animation-delay:.75s">
         <div class="chart-title">Total recognitions by year — all time</div>
         <div class="cw"><canvas id="histChart"></canvas></div>
       </div>
